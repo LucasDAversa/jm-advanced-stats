@@ -1745,6 +1745,7 @@ function egMerge() {
     if (egPosPaneTable) egPosPaneTable.style.display = 'block';
   }
 
+  enrichSislerPositions(); // also enrich Sisler if it's already loaded
   document.getElementById('eg-cards').style.display = 'grid';
   egRender();
 }
@@ -2403,16 +2404,34 @@ function sislerBuild(raw) {
   const teams = [...new Set(SISLER.raw.map(r => r.team).filter(Boolean))].sort();
   populateTeamFilter('sisler-team', teams);
 
-  // Populate position filter
-  const sislerPositions = [...new Set(SISLER.raw.map(r=>r.pos).filter(Boolean))].sort();
-  const sisPosEl = document.getElementById('sisler-pos');
-  if (sisPosEl) {
-    sisPosEl.innerHTML = '<option value="">All Positions</option>' +
-      sislerPositions.map(p => `<option value="${p}">${p}</option>`).join('');
-  }
+  enrichSislerPositions();
 
   document.getElementById('sisler-cards').style.display = 'grid';
   sislerRender();
+}
+
+// Pull positions from EG.combined into SISLER.raw (EG is the reliable source for pos)
+function enrichSislerPositions() {
+  if (!EG.combined || !EG.combined.length || !SISLER.raw || !SISLER.raw.length) return;
+
+  // Build lookup: normStr(player+'|'+team) → pos
+  const posMap = {};
+  for (const r of EG.combined) {
+    if (r.pos) posMap[normStr(r.player + '|' + r.team)] = r.pos;
+  }
+
+  for (const r of SISLER.raw) {
+    if (!r.pos) r.pos = posMap[normStr(r.player + '|' + r.team)] || '';
+  }
+
+  // Re-populate the position filter dropdown
+  const positions = [...new Set(SISLER.raw.map(r => r.pos).filter(Boolean))].sort();
+  const sisPosEl = document.getElementById('sisler-pos');
+  if (sisPosEl) {
+    const cur = sisPosEl.value;
+    sisPosEl.innerHTML = '<option value="">All Positions</option>' +
+      positions.map(p => `<option value="${p}"${p === cur ? ' selected' : ''}>${p}</option>`).join('');
+  }
 }
 
 function sislerGetFiltered() {
@@ -3754,7 +3773,7 @@ function cmpSearchInput() {
     return;
   }
   dd.innerHTML = matches.map(p =>
-    `<div class="cmp-dd-item" onclick="cmpAddPlayer(${JSON.stringify(p.name)}, ${JSON.stringify(p.team)})">
+    `<div class="cmp-dd-item" data-name="${esc(p.name)}" data-team="${esc(p.team)}">
       <span>${esc(p.name)}</span><small>${esc(p.team)}</small>
     </div>`
   ).join('');
@@ -3920,10 +3939,16 @@ function cmpRender() {
   body.innerHTML = html + '</div>';
 }
 
-// Close dropdown when clicking elsewhere
+// Dropdown click handler — covers item selection AND outside-click close
 document.addEventListener('click', e => {
   const dd = document.getElementById('cmp-dropdown');
-  if (dd && !e.target.closest('.cmp-search-wrap')) dd.style.display = 'none';
+  if (!dd) return;
+  const item = e.target.closest('.cmp-dd-item');
+  if (item && dd.contains(item)) {
+    cmpAddPlayer(item.dataset.name, item.dataset.team);
+    return;
+  }
+  if (!e.target.closest('.cmp-search-wrap')) dd.style.display = 'none';
 });
 
 // ════════════════════════════════════════════
