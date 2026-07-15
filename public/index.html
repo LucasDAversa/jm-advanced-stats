@@ -3554,16 +3554,25 @@ async function compressIfNeeded(text) {
   try {
     const bytes = new TextEncoder().encode(text);
     const cs = new CompressionStream('gzip');
+
+    // IMPORTANT: read and write concurrently.
+    // Writing the full buffer before reading deadlocks on large files —
+    // the write blocks waiting for the buffer to drain, but nothing is reading it.
+    const chunks = [];
+    const readAll = (async () => {
+      const reader = cs.readable.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+    })();
+
     const writer = cs.writable.getWriter();
     await writer.write(bytes);
     await writer.close();
-    const chunks = [];
-    const reader = cs.readable.getReader();
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
+    await readAll;
+
     const totalLen = chunks.reduce((n, c) => n + c.length, 0);
     const combined = new Uint8Array(totalLen);
     let offset = 0;
