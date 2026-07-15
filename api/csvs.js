@@ -1,6 +1,6 @@
-import { list } from '@vercel/blob';
+const { list } = require('@vercel/blob');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).end();
 
@@ -13,4 +13,4 @@ export default async function handler(req, res) {
   }
 
   res.status(200).json(result);
-}
+};
