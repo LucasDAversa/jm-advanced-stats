@@ -86,6 +86,25 @@ body {
 .stat-panel { display: none; }
 .stat-panel.active { display: block; }
 
+/* ── Admin tab ── */
+.admin-csv-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.admin-csv-label { flex: 1; font-size: 13px; font-weight: 600; }
+.admin-csv-status { font-size: 12px; color: var(--text2); min-width: 160px; text-align: right; }
+.admin-csv-status.loaded { color: var(--green); }
+.admin-csv-status.saved  { color: var(--blue);  }
+.admin-csv-upload-btn {
+  padding: 6px 14px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  transition: background 0.1s;
+}
+.admin-csv-upload-btn:hover { background: var(--surface3); }
+
 /* ── Upload section ── */
 .upload-section {
   background: var(--surface);
@@ -784,6 +803,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <div class="stat-tab" onclick="switchStat('sgs')">📊 Simple Game Score</div>
   <div class="stat-tab" onclick="switchStat('sisler')">🏃 Sisler Stat</div>
   <div class="stat-tab" onclick="switchStat('series')">📋 Series Standings</div>
+  <div class="stat-tab" onclick="switchStat('admin')" style="margin-left:auto;opacity:0.7">⚙ Admin</div>
 </div>
 
 <div class="content">
@@ -1302,6 +1322,66 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 
   </div><!-- /panel-series -->
 
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ADMIN                                  -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel" id="panel-admin">
+    <div style="max-width:680px;margin:0 auto;padding:32px 16px">
+
+      <div style="margin-bottom:28px">
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px">Data Management</div>
+        <div style="font-size:13px;color:var(--text2)">Upload CSVs below, then click <strong>Save to Site</strong> to persist them for all visitors. Data saved here loads automatically on every page open.</div>
+      </div>
+
+      <!-- Save button -->
+      <button id="admin-save-btn" onclick="adminSaveAll()" style="width:100%;padding:14px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;transition:opacity 0.15s">
+        💾 Save to Site
+      </button>
+      <div id="admin-save-status" style="text-align:center;font-size:12px;color:var(--text2);min-height:20px;margin-bottom:28px"></div>
+
+      <!-- CSV status table -->
+      <div style="display:flex;flex-direction:column;gap:12px" id="admin-csv-rows">
+
+        <div class="admin-csv-row" id="acr-eg-total">
+          <div class="admin-csv-label">Empty Games — Total Games</div>
+          <div class="admin-csv-status" id="acrs-eg-total">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'total')"></label>
+        </div>
+
+        <div class="admin-csv-row" id="acr-eg-empty">
+          <div class="admin-csv-label">Empty Games — Empty Games</div>
+          <div class="admin-csv-status" id="acrs-eg-empty">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'empty')"></label>
+        </div>
+
+        <div class="admin-csv-row" id="acr-sgs">
+          <div class="admin-csv-label">Simple Game Score</div>
+          <div class="admin-csv-status" id="acrs-sgs">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSGSFile(event)"></label>
+        </div>
+
+        <div class="admin-csv-row" id="acr-sisler-pa">
+          <div class="admin-csv-label">Sisler Stat — Plate Appearances</div>
+          <div class="admin-csv-status" id="acrs-sisler-pa">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSislerFile(event)"></label>
+        </div>
+
+        <div class="admin-csv-row" id="acr-sisler-sb">
+          <div class="admin-csv-label">Sisler Stat — Stolen Bases</div>
+          <div class="admin-csv-status" id="acrs-sisler-sb">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSBFile(event)"></label>
+        </div>
+
+        <div class="admin-csv-row" id="acr-series">
+          <div class="admin-csv-label">Series Standings</div>
+          <div class="admin-csv-status" id="acrs-series">Not loaded</div>
+          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)"></label>
+        </div>
+
+      </div>
+
+    </div>
+  </div><!-- /panel-admin -->
 
 </div><!-- /content -->
 
@@ -1638,10 +1718,89 @@ function populateTeamFilter(selectId, teams) {
 function switchStat(id) {
   document.querySelectorAll('.stat-tab').forEach((t,i) => {
     t.classList.toggle('active',
-      (id==='eg'&&i===0)||(id==='sgs'&&i===1)||(id==='sisler'&&i===2)||(id==='series'&&i===3));
+      (id==='eg'&&i===0)||(id==='sgs'&&i===1)||(id==='sisler'&&i===2)||(id==='series'&&i===3)||(id==='admin'&&i===4));
   });
   document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'admin') adminRefreshStatus();
+}
+
+// ════════════════════════════════════════════
+// ADMIN — Save to Site
+// ════════════════════════════════════════════
+
+const ADMIN_CSV_MAP = [
+  { key: 'eg-total',   storeKey: 'egTotal',   statusId: 'acrs-eg-total' },
+  { key: 'eg-empty',   storeKey: 'egEmpty',   statusId: 'acrs-eg-empty' },
+  { key: 'sgs',        storeKey: 'sgs',        statusId: 'acrs-sgs'      },
+  { key: 'sisler-pa',  storeKey: 'sislerPa',  statusId: 'acrs-sisler-pa'},
+  { key: 'sisler-sb',  storeKey: 'sislerSb',  statusId: 'acrs-sisler-sb'},
+  { key: 'series',     storeKey: 'series',    statusId: 'acrs-series'   },
+];
+
+function adminRefreshStatus() {
+  for (const { storeKey, statusId } of ADMIN_CSV_MAP) {
+    const el = document.getElementById(statusId);
+    if (!el) continue;
+    const text = STORED_CSVS[storeKey];
+    if (text) {
+      const rows = text.split('\n').length - 1;
+      el.textContent = `✓ Loaded (${rows.toLocaleString()} rows)`;
+      el.className = 'admin-csv-status loaded';
+    } else {
+      el.textContent = 'Not loaded';
+      el.className = 'admin-csv-status';
+    }
+  }
+}
+
+async function adminSaveAll() {
+  const btn = document.getElementById('admin-save-btn');
+  const statusEl = document.getElementById('admin-save-status');
+
+  const toSave = ADMIN_CSV_MAP.filter(({ storeKey }) => STORED_CSVS[storeKey]);
+  if (!toSave.length) {
+    statusEl.textContent = 'Nothing loaded yet — upload CSVs first.';
+    statusEl.style.color = 'var(--accent)';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
+  statusEl.textContent = '';
+
+  let saved = 0, failed = 0;
+  for (const { key, storeKey, statusId } of toSave) {
+    const el = document.getElementById(statusId);
+    try {
+      const r = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, content: STORED_CSVS[storeKey] }),
+      });
+      if (r.ok) {
+        saved++;
+        if (el) { el.textContent = '✓ Saved to site'; el.className = 'admin-csv-status saved'; }
+      } else {
+        failed++;
+        const err = await r.json().catch(() => ({}));
+        if (el) { el.textContent = `✗ Error: ${err.error || r.status}`; el.className = 'admin-csv-status'; }
+      }
+    } catch (e) {
+      failed++;
+      if (el) { el.textContent = `✗ Network error`; el.className = 'admin-csv-status'; }
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 Save to Site';
+  if (failed === 0) {
+    statusEl.textContent = `✓ ${saved} file${saved !== 1 ? 's' : ''} saved successfully.`;
+    statusEl.style.color = 'var(--green)';
+  } else {
+    statusEl.textContent = `${saved} saved, ${failed} failed. Check that Vercel Blob is connected.`;
+    statusEl.style.color = 'var(--accent)';
+  }
 }
 
 
@@ -1678,6 +1837,7 @@ function loadEGFile(event, which) {
     }
     if (EG.total && EG.empty) egMerge();
     persistCSV(which === 'total' ? 'eg-total' : 'eg-empty', text);
+    adminRefreshStatus();
   });
 }
 
@@ -1901,6 +2061,7 @@ function loadSGSFile(event) {
     document.getElementById('sgsst').className = 'upload-status ready';
     document.getElementById('sgsbtn').classList.add('loaded');
     persistCSV('sgs', text);
+    adminRefreshStatus();
   });
 }
 
@@ -2339,6 +2500,7 @@ function loadSislerFile(event) {
     document.getElementById('sislerst').className = 'upload-status ready';
     document.getElementById('sislerbtn').classList.add('loaded');
     persistCSV('sisler-pa', text);
+    adminRefreshStatus();
   });
 }
 
@@ -2921,6 +3083,7 @@ function loadSBFile(event) {
     sislerUpdateSBNotice();
     if (SISLER.raw.length) sislerRender();
     persistCSV('sisler-sb', text);
+    adminRefreshStatus();
   });
 }
 
@@ -4021,6 +4184,7 @@ function loadSeriesFile(event) {
     st.className = 'upload-status ready';
     btn.classList.add('loaded');
     persistCSV('series', text);
+    adminRefreshStatus();
   };
   reader.readAsText(file);
 }
