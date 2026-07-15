@@ -1119,10 +1119,10 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     </div>
 
     <div class="summary-cards" id="sisler-cards" style="display:none">
-      <div class="card"><div class="card-label">Players</div><div class="card-value" id="sislc-players">—</div></div>
-      <div class="card"><div class="card-label">Avg Production</div><div class="card-value" id="sislc-avgprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub">league average</div></div>
-      <div class="card"><div class="card-label">Top Production</div><div class="card-value" id="sislc-topprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub" id="sislc-topprod-name">—</div></div>
-      <div class="card"><div class="card-label">Most Hitting Pts</div><div class="card-value" id="sislc-toppts">—</div><div class="card-sub" id="sislc-toppts-name">—</div></div>
+      <div class="card"><div class="card-label">Avg Sisler Score</div><div class="card-value" id="sislc-avgprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub">league average</div></div>
+      <div class="card"><div class="card-label">Top Sisler Score</div><div class="card-value" id="sislc-topprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub" id="sislc-topprod-name">—</div></div>
+      <div class="card"><div class="card-label">Most Hitting Pts</div><div class="card-value" id="sislc-tophit">—</div><div class="card-sub" id="sislc-tophit-name">—</div></div>
+      <div class="card"><div class="card-label">Most BR Pts</div><div class="card-value" id="sislc-topbr">—</div><div class="card-sub" id="sislc-topbr-name">—</div></div>
     </div>
 
     <!-- By Player -->
@@ -2748,29 +2748,35 @@ function sislerRender() {
   const filtered = sislerGetFiltered();
   const players  = sislerAggPlayers(filtered);
 
-  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg Production';
-  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Top Production';
-  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = 'Most Sisler Score';
-
   document.getElementById('sisler-cards').style.display = 'grid';
-  document.getElementById('sislc-players').textContent = players.length;
-  const avgProd = players.length
-    ? players.reduce((s, p) => s + p.production, 0) / players.length : 0;
-  document.getElementById('sislc-avgprod').textContent = fmtProd(avgProd);
-
-  const topProd  = players.reduce((b,p) => (!b || p.production     > b.production)     ? p : b, null);
-  const topScore = players.reduce((b,p) => (!b || p.sisler_score   > b.sisler_score)   ? p : b, null);
-  if (topProd) {
-    document.getElementById('sislc-topprod').textContent      = fmtProd(topProd.production);
-    document.getElementById('sislc-topprod-name').textContent = topProd.player;
-  }
-  if (topScore) {
-    document.getElementById('sislc-toppts').textContent      = fmtN(topScore.sisler_score);
-    document.getElementById('sislc-toppts-name').textContent = topScore.player;
-  }
+  sislerUpdateCards(players);
 
   if (SISLER.view === 'player') sislerRenderPlayer(players);
   if (SISLER.view === 'team')   sislerRenderTeam(players);
+}
+
+// Single source of truth for the 4 Sisler summary cards
+function sislerUpdateCards(players) {
+  const avgScore = players.length ? players.reduce((s,p) => s + (p.sisler_score||0), 0) / players.length : 0;
+  document.getElementById('sislc-avgprod').textContent = fmtN(avgScore);
+
+  const topScore = players.reduce((b,p) => (!b || (p.sisler_score||0) > (b.sisler_score||0)) ? p : b, null);
+  if (topScore) {
+    document.getElementById('sislc-topprod').textContent      = fmtN(topScore.sisler_score||0);
+    document.getElementById('sislc-topprod-name').textContent = topScore.player;
+  }
+
+  const topHit = players.reduce((b,p) => (!b || (p.hit_pts||0) > (b.hit_pts||0)) ? p : b, null);
+  if (topHit) {
+    document.getElementById('sislc-tophit').textContent      = fmtN(topHit.hit_pts||0);
+    document.getElementById('sislc-tophit-name').textContent = topHit.player;
+  }
+
+  const topBR = players.reduce((b,p) => (!b || (p.br_pts||0) > (b.br_pts||0)) ? p : b, null);
+  if (topBR) {
+    document.getElementById('sislc-topbr').textContent      = fmtN(topBR.br_pts||0);
+    document.getElementById('sislc-topbr-name').textContent = topBR.player;
+  }
 }
 
 function sislerRenderPlayer(players) {
@@ -3238,27 +3244,12 @@ function sislerRenderBR() {
   const players = getBRPlayers();
   const hasSB   = Object.keys(SISLER.brSBMap).length > 0;
 
-  // Summary cards
-  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg BR Pts';
-  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Most BR Pts';
-  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = hasSB ? 'Total SB Pts' : 'PA Adv Pts';
-
-  document.getElementById('sislc-players').textContent = players.length;
-  const avgBR = players.length ? players.reduce((s,p) => s + p.total_br_pts, 0) / players.length : 0;
-  document.getElementById('sislc-avgprod').textContent = fmtN(avgBR);
-
-  const topBR = players.reduce((b,p) => (!b || p.total_br_pts > b.total_br_pts) ? p : b, null);
-  if (topBR) {
-    document.getElementById('sislc-topprod').textContent      = fmtN(topBR.total_br_pts);
-    document.getElementById('sislc-topprod-name').textContent = topBR.fullName;
-  }
-  if (hasSB) {
-    document.getElementById('sislc-toppts').textContent      = fmtN(players.reduce((s,p) => s + p.sbPts, 0));
-    document.getElementById('sislc-toppts-name').textContent = 'across all players';
-  } else {
-    document.getElementById('sislc-toppts').textContent      = fmtN(players.reduce((s,p) => s + p.paPts, 0));
-    document.getElementById('sislc-toppts-name').textContent = 'from advancements';
-  }
+  // BR view uses its own player structure — map to sislerUpdateCards-compatible shape
+  const brAsSisler = players.map(p => ({
+    player: p.fullName, team: p.team,
+    sisler_score: p.total_br_pts, hit_pts: 0, br_pts: p.total_br_pts,
+  }));
+  sislerUpdateCards(brAsSisler);
 
   if (SISLER.view === 'player') sislerRenderBRPlayer(players, hasSB);
   if (SISLER.view === 'team')   sislerRenderBRTeam(players, hasSB);
@@ -3368,22 +3359,7 @@ function sislerRenderCombined() {
   sislerUpdateSBNotice();
   const players = sislerGetCombinedPlayers();
 
-  // Summary cards
-  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg Sisler Score';
-  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Top Sisler Score';
-  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = 'Players';
-
-  document.getElementById('sislc-players').textContent = players.length;
-  const avgScore = players.length ? players.reduce((s,p) => s + p.sisler_score, 0) / players.length : 0;
-  document.getElementById('sislc-avgprod').textContent = fmtN(avgScore);
-
-  const topScore = players.reduce((b,p) => (!b || p.sisler_score > b.sisler_score) ? p : b, null);
-  if (topScore) {
-    document.getElementById('sislc-topprod').textContent      = fmtN(topScore.sisler_score);
-    document.getElementById('sislc-topprod-name').textContent = topScore.player;
-  }
-  document.getElementById('sislc-toppts').textContent      = players.length.toString();
-  document.getElementById('sislc-toppts-name').textContent = 'qualified players';
+  sislerUpdateCards(players);
 
   if (SISLER.view === 'player') sislerRenderCombinedPlayer(players);
   if (SISLER.view === 'team')   sislerRenderCombinedTeam(players);
