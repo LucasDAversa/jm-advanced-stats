@@ -1257,10 +1257,10 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     </div>
 
     <div class="summary-cards" id="series-cards" style="display:none">
-      <div class="card"><div class="card-label">Teams</div><div class="card-value" id="seriesc-teams">—</div></div>
-      <div class="card"><div class="card-label">Total Series</div><div class="card-value" id="seriesc-series">—</div></div>
-      <div class="card"><div class="card-label">Avg Series Win%</div><div class="card-value" id="seriesc-avgpct">—</div><div class="card-sub">across all teams</div></div>
-      <div class="card"><div class="card-label">Best Series Win%</div><div class="card-value" id="seriesc-top">—</div><div class="card-sub" id="seriesc-top-name">—</div></div>
+      <div class="card"><div class="card-label">Best Series Win%</div><div class="card-value" id="seriesc-best-pct">—</div><div class="card-sub" id="seriesc-best-name">—</div></div>
+      <div class="card"><div class="card-label">Worst Series Win%</div><div class="card-value" id="seriesc-worst-pct">—</div><div class="card-sub" id="seriesc-worst-name">—</div></div>
+      <div class="card"><div class="card-label">Biggest Riser</div><div class="card-value" id="seriesc-riser-val">—</div><div class="card-sub" id="seriesc-riser-name">—</div></div>
+      <div class="card"><div class="card-label">Biggest Faller</div><div class="card-value" id="seriesc-faller-val">—</div><div class="card-sub" id="seriesc-faller-name">—</div></div>
     </div>
 
     <!-- ── Timeline view ── -->
@@ -1301,6 +1301,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
               <th data-col="winPct"     onclick="seriesTableSortBy('winPct')"     style="text-align:right">Win%</th>
               <th data-col="sW"         onclick="seriesTableSortBy('sW')"         style="text-align:right">Series</th>
               <th data-col="serWinPct"  onclick="seriesTableSortBy('serWinPct')"  style="text-align:right">Ser W%</th>
+              <th data-col="diff"       onclick="seriesTableSortBy('diff')"       style="text-align:right" title="Series Win% minus Game Win%">Diff</th>
               <th data-col="sW2"        onclick="seriesTableSortBy('sW')"         style="text-align:right">Ser W</th>
               <th data-col="sL"         onclick="seriesTableSortBy('sL')"         style="text-align:right">Ser L</th>
               <th data-col="sT"         onclick="seriesTableSortBy('sT')"         style="text-align:right">Ser T</th>
@@ -1326,7 +1327,23 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <!-- ADMIN                                  -->
   <!-- ═══════════════════════════════════════ -->
   <div class="stat-panel" id="panel-admin">
-    <div style="max-width:680px;margin:0 auto;padding:32px 16px">
+
+    <!-- Password gate -->
+    <div id="admin-gate" style="max-width:360px;margin:80px auto;padding:32px;text-align:center">
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px">⚙ Admin</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:24px">Enter the admin password to continue</div>
+      <input type="password" id="admin-pw-input" placeholder="Password"
+        style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')adminUnlock()">
+      <button onclick="adminUnlock()"
+        style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">
+        Unlock
+      </button>
+      <div id="admin-pw-error" style="margin-top:10px;font-size:12px;color:var(--accent);min-height:16px"></div>
+    </div>
+
+    <!-- Admin content (hidden until unlocked) -->
+    <div id="admin-content" style="display:none;max-width:680px;margin:0 auto;padding:32px 16px">
 
       <div style="margin-bottom:28px">
         <div style="font-size:18px;font-weight:700;margin-bottom:6px">Data Management</div>
@@ -1339,43 +1356,55 @@ tbody td { padding: 9px 12px; font-size: 13px; }
       </button>
       <div id="admin-save-status" style="text-align:center;font-size:12px;color:var(--text2);min-height:20px;margin-bottom:28px"></div>
 
-      <!-- CSV status table -->
+      <!-- CSV rows -->
       <div style="display:flex;flex-direction:column;gap:12px" id="admin-csv-rows">
 
-        <div class="admin-csv-row" id="acr-eg-total">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Empty Games — Total Games</div>
           <div class="admin-csv-status" id="acrs-eg-total">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'total')"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('eg-total','eg-total.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('eg-total')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'total')"></label>
         </div>
 
-        <div class="admin-csv-row" id="acr-eg-empty">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Empty Games — Empty Games</div>
           <div class="admin-csv-status" id="acrs-eg-empty">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'empty')"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('eg-empty','eg-empty.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('eg-empty')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'empty')"></label>
         </div>
 
-        <div class="admin-csv-row" id="acr-sgs">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Simple Game Score</div>
           <div class="admin-csv-status" id="acrs-sgs">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSGSFile(event)"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('sgs','sgs.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('sgs')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadSGSFile(event)"></label>
         </div>
 
-        <div class="admin-csv-row" id="acr-sisler-pa">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Sisler Stat — Plate Appearances</div>
           <div class="admin-csv-status" id="acrs-sisler-pa">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSislerFile(event)"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('sisler-pa','sisler-pa.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('sisler-pa')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadSislerFile(event)"></label>
         </div>
 
-        <div class="admin-csv-row" id="acr-sisler-sb">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Sisler Stat — Stolen Bases</div>
           <div class="admin-csv-status" id="acrs-sisler-sb">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSBFile(event)"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('sisler-sb','sisler-sb.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('sisler-sb')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadSBFile(event)"></label>
         </div>
 
-        <div class="admin-csv-row" id="acr-series">
+        <div class="admin-csv-row">
           <div class="admin-csv-label">Series Standings</div>
           <div class="admin-csv-status" id="acrs-series">Not loaded</div>
-          <label class="admin-csv-upload-btn">Upload CSV <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)"></label>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('series','series.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('series')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)"></label>
         </div>
 
       </div>
@@ -1722,12 +1751,48 @@ function switchStat(id) {
   });
   document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
-  if (id === 'admin') adminRefreshStatus();
+  if (id === 'admin') {
+    if (adminUnlocked) adminRefreshStatus();
+    // else gate is already showing
+  }
 }
 
 // ════════════════════════════════════════════
-// ADMIN — Save to Site
+// ADMIN — Password + Save to Site
 // ════════════════════════════════════════════
+
+// Change this password directly in the HTML file
+const ADMIN_PASSWORD = 'jomboy2026';
+
+let adminUnlocked = false;
+
+function adminUnlock() {
+  const pw = document.getElementById('admin-pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    adminUnlocked = true;
+    document.getElementById('admin-gate').style.display    = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    adminRefreshStatus();
+  } else {
+    document.getElementById('admin-pw-error').textContent = 'Incorrect password.';
+    document.getElementById('admin-pw-input').value = '';
+  }
+}
+
+async function adminDownloadSaved(key, filename) {
+  try {
+    const r = await fetch('/api/csvs');
+    if (!r.ok) { alert('Could not reach server.'); return; }
+    const urls = await r.json();
+    if (!urls[key]) { alert('No saved file found for "' + key + '".'); return; }
+    const a = document.createElement('a');
+    a.href = urls[key];
+    a.download = filename;
+    a.click();
+  } catch (e) {
+    alert('Download failed: ' + e.message);
+  }
+}
 
 const ADMIN_CSV_MAP = [
   { key: 'eg-total',   storeKey: 'egTotal',   statusId: 'acrs-eg-total' },
@@ -4319,6 +4384,7 @@ function getSeriesAggregates() {
       serTotal:  series.length,
       // Win% = series won / total series (ties count as half-win: optional — using raw W%)
       serWinPct: series.length > 0 ? sW / series.length : 0,
+      get diff() { return this.serWinPct - this.winPct; },
       homeW: home.filter(s => s.result === 'W').length,
       homeL: home.filter(s => s.result === 'L').length,
       homeT: home.filter(s => s.result === 'T').length,
@@ -4358,15 +4424,23 @@ function seriesRender() {
 function updateSeriesCards() {
   const agg = getSeriesAggregates();
   if (!agg.length) return;
-  const teams  = agg.length;
-  const total  = agg.reduce((s, r) => s + r.serTotal, 0);
-  const avgPct = agg.reduce((s, r) => s + r.serWinPct, 0) / teams;
-  const top    = [...agg].sort((a, b) => b.serWinPct - a.serWinPct)[0];
-  document.getElementById('seriesc-teams').textContent   = teams;
-  document.getElementById('seriesc-series').textContent  = total;
-  document.getElementById('seriesc-avgpct').textContent  = (avgPct * 100).toFixed(1) + '%';
-  document.getElementById('seriesc-top').textContent     = (top.serWinPct * 100).toFixed(1) + '%';
-  document.getElementById('seriesc-top-name').textContent= top.team;
+
+  const sorted   = [...agg].sort((a, b) => b.serWinPct - a.serWinPct);
+  const best     = sorted[0];
+  const worst    = sorted[sorted.length - 1];
+  const riser    = [...agg].sort((a, b) => b.diff - a.diff)[0];   // serWinPct most above winPct
+  const faller   = [...agg].sort((a, b) => a.diff - b.diff)[0];   // serWinPct most below winPct
+
+  const fmt = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+
+  document.getElementById('seriesc-best-pct').textContent   = (best.serWinPct * 100).toFixed(1) + '%';
+  document.getElementById('seriesc-best-name').textContent  = best.team;
+  document.getElementById('seriesc-worst-pct').textContent  = (worst.serWinPct * 100).toFixed(1) + '%';
+  document.getElementById('seriesc-worst-name').textContent = worst.team;
+  document.getElementById('seriesc-riser-val').textContent  = fmt(riser.diff);
+  document.getElementById('seriesc-riser-name').textContent = riser.team + ' · Ser ' + (riser.serWinPct*100).toFixed(1) + '% vs W% ' + (riser.winPct*100).toFixed(1) + '%';
+  document.getElementById('seriesc-faller-val').textContent = fmt(faller.diff);
+  document.getElementById('seriesc-faller-name').textContent= faller.team + ' · Ser ' + (faller.serWinPct*100).toFixed(1) + '% vs W% ' + (faller.winPct*100).toFixed(1) + '%';
 }
 
 // ════════════════════════════════════════════
@@ -4504,7 +4578,7 @@ function renderSeriesTable() {
 
   const body = document.getElementById('series-records-body');
   if (!rows.length) {
-    body.innerHTML = '<tr class="no-rows"><td colspan="11">No teams match current filters</td></tr>';
+    body.innerHTML = '<tr class="no-rows"><td colspan="12">No teams match current filters</td></tr>';
     return;
   }
 
@@ -4523,6 +4597,7 @@ function renderSeriesTable() {
       <td class="col-right">${(r.winPct * 100).toFixed(1)}%</td>
       <td class="col-right" style="font-weight:700">${r.sW}-${r.sL}-${r.sT}</td>
       <td class="col-right ${rdCls}" style="font-weight:700">${(r.serWinPct * 100).toFixed(1)}%</td>
+      <td class="col-right" style="font-weight:600;color:${r.diff >= 0 ? 'var(--green)' : 'var(--accent)'}">${r.diff >= 0 ? '+' : ''}${(r.diff * 100).toFixed(1)}%</td>
       <td class="col-right c-green">${r.sW}</td>
       <td class="col-right c-red">${r.sL}</td>
       <td class="col-right" style="color:var(--text2)">${r.sT}</td>
