@@ -24,6 +24,26 @@
   --radius: 8px;
 }
 
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface2: #eaecef;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text2: #656d76;
+  --text3: #424a53;
+}
+
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text2);
+  cursor: pointer; font-size: 12px; font-weight: 500;
+  transition: all 0.15s;
+}
+.theme-btn:hover { border-color: var(--blue); color: var(--text); }
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -792,6 +812,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 7.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13a.5.5 0 0 1-.5-.5Z"/><path d="M3.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 .5-.5Zm9 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 .5-.5Z"/></svg>
     Compare Players
   </button>
+  <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀ Light</button>
   <button class="share-btn" id="share-btn" onclick="exportWithData()" title="Embed loaded CSVs into the HTML so recipients don't need to re-upload">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
     Share with Data
@@ -812,30 +833,6 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <!-- EMPTY GAMES                            -->
   <!-- ═══════════════════════════════════════ -->
   <div class="stat-panel active" id="panel-eg">
-
-    <div class="upload-section">
-      <div class="upload-section-title">Data Sources</div>
-      <div class="upload-row">
-        <div class="upload-item">
-          <label class="upload-btn" id="egbtn-total">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            Total Games CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'total')">
-          </label>
-          <span class="upload-status" id="egst-total">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('eg-total')">↓ Download template</button>
-        </div>
-        <div class="upload-item">
-          <label class="upload-btn" id="egbtn-empty">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            Empty Games CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'empty')">
-          </label>
-          <span class="upload-status" id="egst-empty">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('eg-empty')">↓ Download template</button>
-        </div>
-      </div>
-    </div>
 
     <div class="toolbar">
       <div class="view-tabs" id="eg-view-tabs">
@@ -864,7 +861,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     </div>
 
     <div class="summary-cards" id="eg-cards" style="display:none">
-      <div class="card"><div class="card-label">Players</div><div class="card-value" id="egc-players">—</div></div>
+      <div class="card"><div class="card-label">Lowest EG%</div><div class="card-value" id="egc-lowpct">—</div><div class="card-sub" id="egc-lowpct-name">—</div></div>
       <div class="card"><div class="card-label">Avg EG%</div><div class="card-value" id="egc-avgpct">—</div><div class="card-sub">across all players</div></div>
       <div class="card"><div class="card-label">Most Empty Games</div><div class="card-value" id="egc-most">—</div><div class="card-sub" id="egc-most-name">—</div></div>
       <div class="card"><div class="card-label">Highest EG%</div><div class="card-value" id="egc-toppct">—</div><div class="card-sub" id="egc-toppct-name">—</div></div>
@@ -945,21 +942,6 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <!-- ═══════════════════════════════════════ -->
   <div class="stat-panel" id="panel-sgs">
 
-    <div class="upload-section">
-      <div class="upload-section-title">Data Sources</div>
-      <div class="upload-row">
-        <div class="upload-item">
-          <label class="upload-btn" id="sgsbtn">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            SGS Data CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadSGSFile(event)">
-          </label>
-          <span class="upload-status" id="sgsst">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('sgs')">↓ Download template</button>
-        </div>
-      </div>
-    </div>
-
     <div class="toolbar">
       <div class="view-tabs" id="sgs-view-tabs">
         <div class="view-tab active" onclick="sgsSetView('player')">By Player</div>
@@ -999,8 +981,8 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     </div>
 
     <div class="summary-cards" id="sgs-cards" style="display:none">
-      <div class="card"><div class="card-label">Pitchers</div><div class="card-value" id="sgsc-pitchers">—</div></div>
-      <div class="card"><div class="card-label">Total Starts</div><div class="card-value" id="sgsc-starts">—</div></div>
+      <div class="card"><div class="card-label">Most Points</div><div class="card-value" id="sgsc-toppts">—</div><div class="card-sub" id="sgsc-toppts-name">—</div></div>
+      <div class="card"><div class="card-label">Highest Floor</div><div class="card-value" id="sgsc-topfloor">—</div><div class="card-sub" id="sgsc-topfloor-name">—</div></div>
       <div class="card"><div class="card-label">League Avg <span id="sgsc-mode-lbl">SGS</span></div><div class="card-value" id="sgsc-avg">—</div><div class="card-sub">per start</div></div>
       <div class="card"><div class="card-label">Top Avg</div><div class="card-value" id="sgsc-top">—</div><div class="card-sub" id="sgsc-top-name">—</div></div>
     </div>
@@ -1059,30 +1041,6 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <!-- ═══════════════════════════════════════ -->
   <div class="stat-panel" id="panel-sisler">
 
-    <div class="upload-section">
-      <div class="upload-section-title">Data Sources</div>
-      <div class="upload-row">
-        <div class="upload-item">
-          <label class="upload-btn" id="sislerbtn">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            Plate Appearances CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadSislerFile(event)">
-          </label>
-          <span class="upload-status" id="sislerst">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('sisler-pa')">↓ Download template</button>
-        </div>
-        <div class="upload-item">
-          <label class="upload-btn" id="sbbtn">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            Stolen Bases CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadSBFile(event)">
-          </label>
-          <span class="upload-status" id="sbst">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('sisler-sb')">↓ Download template</button>
-        </div>
-      </div>
-    </div>
-
     <div class="toolbar">
       <div class="view-tabs" id="sisler-view-tabs">
         <div class="view-tab active" onclick="sislerSetView('player')">By Player</div>
@@ -1123,6 +1081,12 @@ tbody td { padding: 9px 12px; font-size: 13px; }
       <div class="card"><div class="card-label">Top Sisler Score</div><div class="card-value" id="sislc-topprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub" id="sislc-topprod-name">—</div></div>
       <div class="card"><div class="card-label">Most Hitting Pts</div><div class="card-value" id="sislc-tophit">—</div><div class="card-sub" id="sislc-tophit-name">—</div></div>
       <div class="card"><div class="card-label">Most BR Pts</div><div class="card-value" id="sislc-topbr">—</div><div class="card-sub" id="sislc-topbr-name">—</div></div>
+    </div>
+    <div class="summary-cards" id="sisler-cards-2" style="display:none;margin-top:10px">
+      <div class="card"><div class="card-label">Best Production</div><div class="card-value" id="sislc-bestprod">—</div><div class="card-sub" id="sislc-bestprod-name">— (qualified)</div></div>
+      <div class="card"><div class="card-label">League Avg Production</div><div class="card-value" id="sislc-avgprodpct">—</div><div class="card-sub">across all players</div></div>
+      <div class="card"><div class="card-label">Best Team Production</div><div class="card-value" id="sislc-bestteamprod">—</div><div class="card-sub" id="sislc-bestteam-name">—</div></div>
+      <div class="card"><div class="card-label">Worst Team Production</div><div class="card-value" id="sislc-worstteamprod">—</div><div class="card-sub" id="sislc-worstteam-name">—</div></div>
     </div>
 
     <!-- By Player -->
@@ -1189,24 +1153,6 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <!-- SERIES STANDINGS                       -->
   <!-- ═══════════════════════════════════════ -->
   <div class="stat-panel" id="panel-series">
-
-    <div class="upload-section">
-      <div class="upload-section-title">Data Sources</div>
-      <div class="upload-row">
-        <div class="upload-item">
-          <label class="upload-btn" id="seriesbtn">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
-            Team Game Log CSV
-            <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)">
-          </label>
-          <span class="upload-status" id="seriesst">No file loaded</span>
-          <button class="template-link" onclick="downloadTemplate('series')">↓ Download template</button>
-        </div>
-        <div class="upload-item" style="color:var(--text2);font-size:11px;align-self:center">
-          Use a Baseball Reference team game log. Add a <strong style="color:var(--text)">Tm</strong> column to combine multiple teams.
-        </div>
-      </div>
-    </div>
 
     <div class="toolbar">
       <div class="view-tabs" id="series-view-tabs">
@@ -1838,11 +1784,7 @@ async function adminSaveAll() {
   for (const { key, storeKey, statusId } of toSave) {
     const el = document.getElementById(statusId);
     try {
-      const r = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, content: STORED_CSVS[storeKey] }),
-      });
+      const r = await uploadToServer(key, STORED_CSVS[storeKey]);
       if (r.ok) {
         saved++;
         if (el) { el.textContent = '✓ Saved to site'; el.className = 'admin-csv-status saved'; }
@@ -2018,13 +1960,14 @@ function egRender() {
   const data = egGetFiltered();
 
   // Summary cards
-  document.getElementById('egc-players').textContent = data.length;
   const avg = data.length ? data.reduce((s,r)=>s+r.pct,0)/data.length : 0;
   document.getElementById('egc-avgpct').textContent = fmtPct(avg);
   const mostEG  = data.reduce((b,r)=>(!b||r.empty>b.empty)?r:b, null);
   const highPct = data.reduce((b,r)=>(!b||r.pct>b.pct)?r:b, null);
+  const lowPct  = data.reduce((b,r)=>(!b||r.pct<b.pct)?r:b, null);
   if (mostEG)  { document.getElementById('egc-most').textContent=mostEG.empty; document.getElementById('egc-most-name').textContent=mostEG.player; }
   if (highPct) { document.getElementById('egc-toppct').textContent=fmtPct(highPct.pct); document.getElementById('egc-toppct-name').textContent=highPct.player; }
+  if (lowPct)  { document.getElementById('egc-lowpct').textContent=fmtPct(lowPct.pct); document.getElementById('egc-lowpct-name').textContent=lowPct.player; }
 
   if (EG.view === 'player')   egRenderPlayer(data);
   if (EG.view === 'team')     egRenderTeam(data);
@@ -2252,12 +2195,14 @@ function sgsRender() {
   const lbl       = SGS.mode === 'sgs' ? 'SGS' : 'SGS+';
 
   // Summary cards
-  document.getElementById('sgsc-pitchers').textContent = players.length;
-  document.getElementById('sgsc-starts').textContent   = filtered.length;
   const leagueAvg = players.length ? players.reduce((s,p)=>s+p.avg,0)/players.length : 0;
   document.getElementById('sgsc-avg').textContent = fmtN(leagueAvg);
   const top = players.reduce((b,p)=>(!b||p.avg>b.avg)?p:b, null);
   if (top) { document.getElementById('sgsc-top').textContent=fmtN(top.avg); document.getElementById('sgsc-top-name').textContent=top.player; }
+  const topPts = players.reduce((b,p)=>(!b||p.total>b.total)?p:b, null);
+  if (topPts) { document.getElementById('sgsc-toppts').textContent=fmtN(topPts.total); document.getElementById('sgsc-toppts-name').textContent=topPts.player; }
+  const topFloor = players.reduce((b,p)=>(!b||p.worst>b.worst)?p:b, null);
+  if (topFloor) { document.getElementById('sgsc-topfloor').textContent=fmtN(topFloor.worst); document.getElementById('sgsc-topfloor-name').textContent=topFloor.player; }
 
   if (SGS.view === 'player')   sgsRenderPlayer(players);
   if (SGS.view === 'team')     sgsRenderTeam(players);
@@ -2634,6 +2579,7 @@ function sislerBuild(raw) {
   enrichSislerPositions();
 
   document.getElementById('sisler-cards').style.display = 'grid';
+  document.getElementById('sisler-cards-2').style.display = 'grid';
   sislerRender();
 }
 
@@ -2749,6 +2695,7 @@ function sislerRender() {
   const players  = sislerAggPlayers(filtered);
 
   document.getElementById('sisler-cards').style.display = 'grid';
+  document.getElementById('sisler-cards-2').style.display = 'grid';
   sislerUpdateCards(players);
 
   if (SISLER.view === 'player') sislerRenderPlayer(players);
@@ -2777,6 +2724,28 @@ function sislerUpdateCards(players) {
     document.getElementById('sislc-topbr').textContent      = fmtN(topBR.br_pts||0);
     document.getElementById('sislc-topbr-name').textContent = topBR.player;
   }
+
+  // Row 2 — Production cards
+  const bestProd = players.reduce((b,p) => (!b || (p.production||0) > (b.production||0)) ? p : b, null);
+  if (bestProd) {
+    document.getElementById('sislc-bestprod').textContent      = fmtProd(bestProd.production||0);
+    document.getElementById('sislc-bestprod-name').textContent = bestProd.player + ' (qualified)';
+  }
+
+  const avgProd = players.length ? players.reduce((s,p) => s + (p.production||0), 0) / players.length : 0;
+  document.getElementById('sislc-avgprodpct').textContent = fmtProd(avgProd);
+
+  const teamMap = {};
+  for (const p of players) {
+    if (!teamMap[p.team]) teamMap[p.team] = { sum: 0, maxPts: 0 };
+    teamMap[p.team].sum    += (p.sisler_score||0);
+    teamMap[p.team].maxPts += (p.max_pts||0);
+  }
+  const teamList = Object.entries(teamMap).map(([t, d]) => ({ team: t, prod: d.maxPts > 0 ? d.sum / d.maxPts : 0 }));
+  const bestTeam  = teamList.reduce((b, t) => (!b || t.prod > b.prod) ? t : b, null);
+  const worstTeam = teamList.reduce((b, t) => (!b || t.prod < b.prod) ? t : b, null);
+  if (bestTeam)  { document.getElementById('sislc-bestteamprod').textContent=fmtProd(bestTeam.prod);   document.getElementById('sislc-bestteam-name').textContent=bestTeam.team; }
+  if (worstTeam) { document.getElementById('sislc-worstteamprod').textContent=fmtProd(worstTeam.prod); document.getElementById('sislc-worstteam-name').textContent=worstTeam.team; }
 }
 
 function sislerRenderPlayer(players) {
@@ -3550,9 +3519,25 @@ async function loadPreloadedData() {
   }
 }
 
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const next = isLight ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('theme-toggle').textContent = next === 'light' ? '🌙 Dark' : '☀ Light';
+  try { localStorage.setItem('jm-theme', next); } catch(_) {}
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   await loadPreloadedData();
   await loadServerCSVs();
+  // Sync theme button and apply saved theme
+  try {
+    const t = localStorage.getItem('jm-theme');
+    if (t === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('theme-toggle').textContent = '🌙 Dark';
+    }
+  } catch(_) {}
 });
 
 // ════════════════════════════════════════════
@@ -3561,14 +3546,49 @@ window.addEventListener('DOMContentLoaded', async () => {
 // On a plain file:// open these calls fail silently — no effect.
 // ════════════════════════════════════════════
 
-async function persistCSV(key, text) {
+async function compressIfNeeded(text) {
+  if (!window.CompressionStream || text.length < 500000) {
+    return { content: text, encoding: 'plain' };
+  }
   try {
-    await fetch('/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, content: text }),
-    });
-  } catch (_) { /* local / offline — silently ignore */ }
+    const bytes = new TextEncoder().encode(text);
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    await writer.write(bytes);
+    await writer.close();
+    const chunks = [];
+    const reader = cs.readable.getReader();
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    const totalLen = chunks.reduce((n, c) => n + c.length, 0);
+    const combined = new Uint8Array(totalLen);
+    let offset = 0;
+    for (const c of chunks) { combined.set(c, offset); offset += c.length; }
+    let bin = '';
+    const CHUNK = 8192;
+    for (let i = 0; i < combined.length; i += CHUNK) {
+      bin += String.fromCharCode(...combined.subarray(i, i + CHUNK));
+    }
+    return { content: btoa(bin), encoding: 'gzip-base64' };
+  } catch (_) {
+    return { content: text, encoding: 'plain' };
+  }
+}
+
+async function uploadToServer(key, text) {
+  const { content, encoding } = await compressIfNeeded(text);
+  return fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, content, encoding }),
+  });
+}
+
+async function persistCSV(key, text) {
+  try { await uploadToServer(key, text); } catch (_) { /* local / offline */ }
 }
 
 async function loadServerCSVs() {
