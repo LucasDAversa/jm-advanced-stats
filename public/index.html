@@ -1,0 +1,4583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JM Advanced Stats</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script id="jm-preload" type="application/json">null</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1e2530;
+  --border: #30363d;
+  --accent: #e03131;
+  --text: #e6edf3;
+  --text2: #7d8590;
+  --text3: #cdd9e5;
+  --green: #3fb950;
+  --blue: #388bfd;
+  --yellow: #d29922;
+  --radius: 8px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.header-logo em { color: var(--accent); font-style: normal; }
+.header-divider { color: var(--border); margin: 0 4px; }
+.header-subtitle { color: var(--text2); font-size: 13px; }
+.share-btn {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  cursor: pointer; font-size: 12px; font-weight: 500;
+  transition: border-color 0.15s, background 0.15s;
+}
+.share-btn:hover { border-color: var(--blue); color: var(--blue); }
+.share-btn:disabled { opacity: 0.45; cursor: default; }
+.share-btn.busy { opacity: 0.7; cursor: wait; }
+
+/* ── Main stat tabs ── */
+.stat-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  gap: 2px;
+}
+.stat-tab {
+  padding: 11px 18px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+.stat-tab:hover { color: var(--text3); }
+.stat-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ── Content ── */
+.content { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+.stat-panel { display: none; }
+.stat-panel.active { display: block; }
+
+/* ── Upload section ── */
+.upload-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.upload-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+.upload-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.upload-item { display: flex; align-items: center; gap: 8px; }
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.upload-btn:hover { border-color: var(--blue); color: var(--text); }
+.upload-btn.loaded { border-color: var(--green); color: var(--green); }
+.upload-status { font-size: 12px; color: var(--text2); }
+.upload-status.ready { color: var(--green); }
+
+/* ── Toolbar row ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ── View tabs (pill style) ── */
+.view-tabs {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 3px;
+}
+.view-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: all 0.15s;
+  user-select: none;
+}
+.view-tab:hover { color: var(--text3); }
+.view-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+/* ── SGS Mode toggle ── */
+.mode-toggle {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 3px;
+}
+.mode-btn {
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+  transition: all 0.15s;
+  user-select: none;
+  letter-spacing: 0.3px;
+}
+.mode-btn.active { background: var(--accent); color: white; }
+
+/* ── Filters bar ── */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-box {
+  padding: 7px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  width: 200px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-box:focus { border-color: var(--blue); }
+.search-box::placeholder { color: var(--text2); }
+.filter-select {
+  padding: 7px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.filter-select:focus { border-color: var(--blue); }
+
+/* ── Summary cards ── */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.card-label { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+.card-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.card-sub { font-size: 11px; color: var(--text2); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Table ── */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text2);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+thead th:hover { color: var(--text3); }
+thead th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+thead th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+thead th.no-sort { cursor: default; }
+thead th.no-sort:hover { color: var(--text2); }
+tbody tr { border-bottom: 1px solid rgba(48,54,61,0.6); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 9px 12px; font-size: 13px; }
+
+.col-rank { color: var(--text2); font-size: 11px; width: 36px; }
+.col-name { font-weight: 600; }
+.col-right { text-align: right; font-variant-numeric: tabular-nums; }
+.col-team-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stat coloring */
+.c-green  { color: var(--green); }
+.c-lime   { color: #7bc47e; }
+.c-text   { color: var(--text); }
+.c-yellow { color: var(--yellow); }
+.c-red    { color: var(--accent); }
+
+/* EG% coloring */
+.eg-low  { color: var(--green); }
+.eg-mid  { color: var(--yellow); }
+.eg-high { color: var(--accent); }
+
+/* ── Empty / notice states ── */
+.empty-state {
+  text-align: center;
+  padding: 52px 20px;
+  color: var(--text2);
+}
+.empty-state-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-state-title { font-size: 15px; font-weight: 600; color: var(--text3); margin-bottom: 5px; }
+.notice-box {
+  background: rgba(56,139,253,0.07);
+  border: 1px solid rgba(56,139,253,0.25);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.no-rows td {
+  text-align: center;
+  color: var(--text2);
+  padding: 36px;
+  font-size: 12px;
+}
+
+/* ── Game log modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 98%;
+  max-width: 980px;
+  max-height: 82vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.modal-header {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.modal-close { cursor: pointer; color: var(--text2); font-size: 18px; line-height: 1; padding: 2px 4px; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 14px 22px 20px; }
+.modal-stats { display: flex; gap: 20px; font-size: 12px; color: var(--text2); margin-top: 10px; }
+.modal-stats strong { color: var(--text); }
+
+/* ── Log button ── */
+.log-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--blue);
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.log-btn:hover { background: rgba(56,139,253,0.1); border-color: var(--blue); }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .content { padding: 14px 16px; }
+  .header { padding: 12px 16px; }
+  .stat-tabs { padding: 0 16px; }
+  .search-box { width: 100%; }
+}
+
+/* ── Download button ── */
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.dl-btn:hover { border-color: var(--blue); color: var(--blue); background: rgba(56,139,253,0.07); }
+.dl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Template download link ── */
+.template-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.12s;
+}
+.template-link:hover { color: var(--blue); }
+
+/* ── Compare button ── */
+.compare-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  background: rgba(56,139,253,0.1);
+  border: 1px solid rgba(56,139,253,0.35);
+  border-radius: 6px;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.compare-btn:hover { background: rgba(56,139,253,0.18); border-color: var(--blue); }
+
+/* ── Compare modal ── */
+#cmp-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.78);
+  z-index: 300;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+#cmp-modal.open { display: flex; }
+#cmp-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1100px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+.cmp-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.cmp-title { font-size: 15px; font-weight: 700; }
+.cmp-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cmp-cat-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-radius: 6px;
+  padding: 3px;
+}
+.cmp-cat-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  transition: all 0.15s;
+  user-select: none;
+  letter-spacing: 0.3px;
+}
+.cmp-cat-btn.active { background: var(--accent); color: white; }
+.cmp-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cmp-search-wrap input {
+  padding: 6px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  width: 200px;
+  outline: none;
+}
+.cmp-search-wrap input:focus { border-color: var(--blue); }
+.cmp-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 260px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.cmp-dd-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.cmp-dd-item:hover { background: rgba(255,255,255,0.05); }
+.cmp-dd-item small { color: var(--text2); font-size: 11px; }
+.cmp-dd-empty { padding: 12px; color: var(--text2); font-size: 12px; text-align: center; }
+/* ── Comparison grid ── */
+.cmp-grid {
+  display: grid;
+  grid-template-columns: 160px repeat(4, 1fr);
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.cmp-col-header {
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 12px;
+  position: relative;
+}
+.cmp-col-header:first-child { border-left: none; }
+.cmp-player-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-player-team { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.cmp-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px;
+}
+.cmp-remove-btn:hover { color: var(--accent); }
+.cmp-add-col {
+  padding: 14px;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  font-size: 12px;
+}
+.cmp-section-row {
+  grid-column: 1 / -1;
+  background: var(--surface2);
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cmp-label-cell {
+  padding: 8px 14px;
+  color: var(--text2);
+  border-right: 1px solid var(--border);
+  font-size: 11px;
+  border-bottom: 1px solid rgba(48,54,61,0.5);
+}
+.cmp-val-cell {
+  padding: 8px 14px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid rgba(48,54,61,0.5);
+}
+.cmp-val-cell.best { color: var(--green); font-weight: 700; }
+.cmp-val-cell.empty-col { background: rgba(255,255,255,0.015); }
+.cmp-empty-state {
+  padding: 40px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 13px;
+}
+.cmp-body { padding: 16px 20px; }
+
+/* ── Series Standings ── */
+.series-legend {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 14px; background: var(--surface2);
+  border-radius: 6px; margin-bottom: 12px;
+  font-size: 11px; color: var(--text2); flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-swatch { width: 13px; height: 22px; border-radius: 3px; flex-shrink: 0; }
+.legend-swatch.win  { background: var(--green); }
+.legend-swatch.loss { background: var(--accent); }
+.legend-swatch.tie  { background: var(--text2); }
+.legend-swatch.home-ring { background: var(--green); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55); }
+.legend-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+.legend-dot.win  { background: var(--green); }
+.legend-dot.loss { background: var(--accent); }
+.legend-dot.tie  { background: var(--text2); border: 1px solid var(--border); }
+
+.series-timeline-outer {
+  overflow-x: auto; overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  max-height: 68vh;
+}
+.series-tl-header {
+  display: flex; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  min-height: 30px;
+}
+.series-tl-hcell-team {
+  position: sticky; left: 0; z-index: 12;
+  width: 118px; min-width: 118px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 6px 10px;
+  font-size: 10px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.series-tl-hcell-dots {
+  position: sticky; left: 118px; z-index: 11;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 6px 10px; flex: 1;
+  font-size: 10px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.series-tl-hcell-games {
+  padding: 6px 16px; white-space: nowrap;
+  font-size: 10px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.series-team-row {
+  display: flex; align-items: stretch;
+  min-height: 50px;
+  border-bottom: 1px solid var(--border);
+}
+.series-team-row:last-child { border-bottom: none; }
+.series-team-label {
+  position: sticky; left: 0; z-index: 5;
+  width: 118px; min-width: 118px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+.series-team-row:hover .series-team-label,
+.series-team-row:hover .series-dots-strip { background: color-mix(in srgb, var(--surface2) 80%, var(--surface)); }
+.series-team-badge {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 800; color: white;
+  flex-shrink: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.series-team-name { font-size: 11px; font-weight: 700; color: var(--text); }
+.series-dots-strip {
+  position: sticky; left: 118px; z-index: 4;
+  width: 100%; min-width: 200px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 6px 10px;
+  display: flex; align-items: center;
+  gap: 4px; flex-wrap: wrap; align-content: center;
+  flex: 1;
+}
+.series-outcome-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  flex-shrink: 0; cursor: pointer;
+  transition: transform 0.1s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; font-weight: 800; color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  letter-spacing: -0.3px;
+}
+.series-outcome-dot:hover { transform: scale(1.6); z-index: 1; }
+.series-outcome-dot.win  { background: var(--green); }
+.series-outcome-dot.loss { background: var(--accent); }
+.series-outcome-dot.tie  { background: var(--text2); border: 1px solid var(--border); }
+.series-games-area {
+  display: flex; align-items: center;
+  gap: 8px; padding: 7px 16px;
+  white-space: nowrap; flex: 1;
+}
+.series-block {
+  display: inline-flex; align-items: center;
+  gap: 5px; cursor: pointer;
+  border-radius: 5px; padding: 3px 4px;
+  transition: background 0.12s; flex-shrink: 0;
+}
+.series-block:hover { background: rgba(255,255,255,0.07); }
+.series-opp-badge {
+  width: 26px; height: 26px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; font-weight: 800; color: white; flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5); letter-spacing: -0.3px;
+}
+.series-game-boxes { display: flex; gap: 2px; align-items: center; }
+.game-box {
+  width: 17px; height: 32px; border-radius: 3px;
+  cursor: pointer; position: relative;
+  transition: transform 0.1s; flex-shrink: 0;
+}
+.game-box:hover { transform: scaleY(1.1); z-index: 3; }
+.game-box.win  { background: var(--green); }
+.game-box.loss { background: var(--accent); }
+.game-box.tie  { background: var(--text2); }
+/* Home = inset white ring; Away = lower opacity */
+.game-box.is-home { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5); }
+.game-box.is-away { opacity: 0.62; }
+/* Extra innings indicator dot */
+.game-box.xi::after {
+  content: ''; position: absolute;
+  bottom: 3px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+}
+/* Series tooltip */
+#series-tooltip {
+  position: fixed; display: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: var(--text); pointer-events: none;
+  z-index: 9999; max-width: 260px; min-width: 190px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55); line-height: 1.5;
+}
+#series-tooltip .tt-head { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+#series-tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; }
+#series-tooltip .tt-label { color: var(--text2); }
+#series-tooltip .tt-val   { font-weight: 600; }
+#series-tooltip .tt-status {
+  margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-weight: 700; font-size: 11px;
+}
+#series-tooltip .tt-status.win  { color: var(--green); }
+#series-tooltip .tt-status.loss { color: var(--accent); }
+#series-tooltip .tt-status.tie  { color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><em>JM</em> Advanced Stats</div>
+  <span class="header-divider">|</span>
+  <div class="header-subtitle">2026 Season</div>
+  <button class="compare-btn" onclick="openCompareModal()" title="Compare 2–4 players side by side">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 7.5a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13a.5.5 0 0 1-.5-.5Z"/><path d="M3.5 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 .5-.5Zm9 0a.5.5 0 0 1 .5.5v15a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 .5-.5Z"/></svg>
+    Compare Players
+  </button>
+  <button class="share-btn" id="share-btn" onclick="exportWithData()" title="Embed loaded CSVs into the HTML so recipients don't need to re-upload">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+    Share with Data
+  </button>
+</div>
+
+<div class="stat-tabs">
+  <div class="stat-tab active" onclick="switchStat('eg')">⚾ Empty Games</div>
+  <div class="stat-tab" onclick="switchStat('sgs')">📊 Simple Game Score</div>
+  <div class="stat-tab" onclick="switchStat('sisler')">🏃 Sisler Stat</div>
+  <div class="stat-tab" onclick="switchStat('series')">📋 Series Standings</div>
+</div>
+
+<div class="content">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- EMPTY GAMES                            -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel active" id="panel-eg">
+
+    <div class="upload-section">
+      <div class="upload-section-title">Data Sources</div>
+      <div class="upload-row">
+        <div class="upload-item">
+          <label class="upload-btn" id="egbtn-total">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            Total Games CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'total')">
+          </label>
+          <span class="upload-status" id="egst-total">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('eg-total')">↓ Download template</button>
+        </div>
+        <div class="upload-item">
+          <label class="upload-btn" id="egbtn-empty">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            Empty Games CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadEGFile(event,'empty')">
+          </label>
+          <span class="upload-status" id="egst-empty">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('eg-empty')">↓ Download template</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="view-tabs" id="eg-view-tabs">
+        <div class="view-tab active" onclick="egSetView('player')">By Player</div>
+        <div class="view-tab" onclick="egSetView('team')">By Team</div>
+        <div class="view-tab" onclick="egSetView('position')">By Position</div>
+      </div>
+      <button class="dl-btn" onclick="downloadEG()" title="Download Empty Games data as CSV">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="filters">
+      <input type="text" class="search-box" id="eg-search" placeholder="Search player…" oninput="egRender()">
+      <select class="filter-select" id="eg-team" onchange="egRender()"><option value="">All Teams</option></select>
+      <select class="filter-select" id="eg-season" onchange="egRender()"><option value="">All Seasons</option></select>
+      <select class="filter-select" id="eg-min" onchange="egRender()">
+        <option value="0">Min 0 G</option>
+        <option value="10">Min 10 G</option>
+        <option value="20" selected>Min 20 G</option>
+        <option value="50">Min 50 G</option>
+        <option value="80">Min 80 G</option>
+      </select>
+      <select class="filter-select" id="eg-pos" onchange="egRender()"><option value="">All Positions</option></select>
+    </div>
+
+    <div class="summary-cards" id="eg-cards" style="display:none">
+      <div class="card"><div class="card-label">Players</div><div class="card-value" id="egc-players">—</div></div>
+      <div class="card"><div class="card-label">Avg EG%</div><div class="card-value" id="egc-avgpct">—</div><div class="card-sub">across all players</div></div>
+      <div class="card"><div class="card-label">Most Empty Games</div><div class="card-value" id="egc-most">—</div><div class="card-sub" id="egc-most-name">—</div></div>
+      <div class="card"><div class="card-label">Highest EG%</div><div class="card-value" id="egc-toppct">—</div><div class="card-sub" id="egc-toppct-name">—</div></div>
+    </div>
+
+    <!-- By Player -->
+    <div id="eg-pane-player">
+      <div class="table-wrap">
+        <table>
+          <thead id="eg-player-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="player" onclick="egSort('player')">Player</th>
+              <th data-col="team" onclick="egSort('team')">Team</th>
+              <th data-col="season" onclick="egSort('season')">Season</th>
+              <th data-col="total" onclick="egSort('total')" style="text-align:right">Games</th>
+              <th data-col="empty" onclick="egSort('empty')" style="text-align:right">Empty G</th>
+              <th data-col="pct" onclick="egSort('pct')" style="text-align:right">EG%</th>
+            </tr>
+          </thead>
+          <tbody id="eg-player-body">
+            <tr class="no-rows"><td colspan="7">Upload both CSV files to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Team -->
+    <div id="eg-pane-team" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead id="eg-team-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="team" onclick="egTeamSort('team')">Team</th>
+              <th data-col="players" onclick="egTeamSort('players')" style="text-align:right">Players</th>
+              <th data-col="total" onclick="egTeamSort('total')" style="text-align:right">Total G</th>
+              <th data-col="empty" onclick="egTeamSort('empty')" style="text-align:right">Empty G</th>
+              <th data-col="pct" onclick="egTeamSort('pct')" style="text-align:right">Avg EG%</th>
+            </tr>
+          </thead>
+          <tbody id="eg-team-body">
+            <tr class="no-rows"><td colspan="6">Upload both CSV files to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Position -->
+    <div id="eg-pane-position" style="display:none">
+      <div class="notice-box" id="eg-pos-notice">
+        ℹ️ To enable Position breakdown, add a <strong>Pos</strong> or <strong>Position</strong> column to your CSV files. The tool will detect it automatically on upload.
+      </div>
+      <div id="eg-pane-pos-table" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-rank no-sort">#</th>
+                <th>Position</th>
+                <th style="text-align:right">Players</th>
+                <th style="text-align:right">Total G</th>
+                <th style="text-align:right">Empty G</th>
+                <th style="text-align:right">Avg EG%</th>
+              </tr>
+            </thead>
+            <tbody id="eg-pos-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-eg -->
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SIMPLE GAME SCORE                      -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel" id="panel-sgs">
+
+    <div class="upload-section">
+      <div class="upload-section-title">Data Sources</div>
+      <div class="upload-row">
+        <div class="upload-item">
+          <label class="upload-btn" id="sgsbtn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            SGS Data CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadSGSFile(event)">
+          </label>
+          <span class="upload-status" id="sgsst">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('sgs')">↓ Download template</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="view-tabs" id="sgs-view-tabs">
+        <div class="view-tab active" onclick="sgsSetView('player')">By Player</div>
+        <div class="view-tab" onclick="sgsSetView('team')">By Team</div>
+      </div>
+      <div class="mode-toggle">
+        <div class="mode-btn active" id="sgs-btn-sgs" onclick="sgsSetMode('sgs')">SGS</div>
+        <div class="mode-btn" id="sgs-btn-sgsplus" onclick="sgsSetMode('sgs+')">SGS+</div>
+      </div>
+      <button class="dl-btn" onclick="downloadSGS()" title="Download SGS data as CSV">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="filters">
+      <input type="text" class="search-box" id="sgs-search" placeholder="Search pitcher…" oninput="sgsRender()">
+      <select class="filter-select" id="sgs-team" onchange="sgsRender()"><option value="">All Teams</option></select>
+      <select class="filter-select" id="sgs-month" onchange="sgsRender()">
+        <option value="">All Months</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+      </select>
+      <select class="filter-select" id="sgs-min" onchange="sgsRender()">
+        <option value="0">Min 0 GS</option>
+        <option value="3">Min 3 GS</option>
+        <option value="5" selected>Min 5 GS</option>
+        <option value="10">Min 10 GS</option>
+        <option value="15">Min 15 GS</option>
+      </select>
+    </div>
+
+    <div class="summary-cards" id="sgs-cards" style="display:none">
+      <div class="card"><div class="card-label">Pitchers</div><div class="card-value" id="sgsc-pitchers">—</div></div>
+      <div class="card"><div class="card-label">Total Starts</div><div class="card-value" id="sgsc-starts">—</div></div>
+      <div class="card"><div class="card-label">League Avg <span id="sgsc-mode-lbl">SGS</span></div><div class="card-value" id="sgsc-avg">—</div><div class="card-sub">per start</div></div>
+      <div class="card"><div class="card-label">Top Avg</div><div class="card-value" id="sgsc-top">—</div><div class="card-sub" id="sgsc-top-name">—</div></div>
+    </div>
+
+    <!-- By Player -->
+    <div id="sgs-pane-player">
+      <div class="table-wrap">
+        <table>
+          <thead id="sgs-player-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="player" onclick="sgsSort('player')">Player</th>
+              <th data-col="team" onclick="sgsSort('team')">Team</th>
+              <th data-col="gs" onclick="sgsSort('gs')" style="text-align:right">GS</th>
+              <th data-col="avg" onclick="sgsSort('avg')" style="text-align:right">Avg <span class="sgs-lbl">SGS</span></th>
+              <th data-col="best" onclick="sgsSort('best')" style="text-align:right">Best</th>
+              <th data-col="worst" onclick="sgsSort('worst')" style="text-align:right">Worst</th>
+              <th data-col="total" onclick="sgsSort('total')" style="text-align:right">Total</th>
+              <th class="no-sort" style="text-align:right">Log</th>
+            </tr>
+          </thead>
+          <tbody id="sgs-player-body">
+            <tr class="no-rows"><td colspan="9">Upload SGS data CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Team -->
+    <div id="sgs-pane-team" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead id="sgs-team-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="team" onclick="sgsTeamSort('team')">Team</th>
+              <th data-col="pitchers" onclick="sgsTeamSort('pitchers')" style="text-align:right">Pitchers</th>
+              <th data-col="gs" onclick="sgsTeamSort('gs')" style="text-align:right">Total GS</th>
+              <th data-col="avg" onclick="sgsTeamSort('avg')" style="text-align:right">Avg <span class="sgs-lbl">SGS</span></th>
+              <th data-col="topname" onclick="sgsTeamSort('topname')">Top Pitcher</th>
+              <th data-col="topavg" onclick="sgsTeamSort('topavg')" style="text-align:right">Top Avg</th>
+            </tr>
+          </thead>
+          <tbody id="sgs-team-body">
+            <tr class="no-rows"><td colspan="7">Upload SGS data CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /panel-sgs -->
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SISLER STAT                            -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel" id="panel-sisler">
+
+    <div class="upload-section">
+      <div class="upload-section-title">Data Sources</div>
+      <div class="upload-row">
+        <div class="upload-item">
+          <label class="upload-btn" id="sislerbtn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            Plate Appearances CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadSislerFile(event)">
+          </label>
+          <span class="upload-status" id="sislerst">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('sisler-pa')">↓ Download template</button>
+        </div>
+        <div class="upload-item">
+          <label class="upload-btn" id="sbbtn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            Stolen Bases CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadSBFile(event)">
+          </label>
+          <span class="upload-status" id="sbst">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('sisler-sb')">↓ Download template</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="view-tabs" id="sisler-view-tabs">
+        <div class="view-tab active" onclick="sislerSetView('player')">By Player</div>
+        <div class="view-tab" onclick="sislerSetView('team')">By Team</div>
+        <div class="view-tab" onclick="sislerSetView('position')">By Position</div>
+      </div>
+      <button class="dl-btn" onclick="downloadSislerCombined()" title="Download combined Sisler scores as CSV">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+        Sisler CSV
+      </button>
+    </div>
+
+    <div class="filters">
+      <input type="text" class="search-box" id="sisler-search" placeholder="Search player…" oninput="sislerRender()">
+      <select class="filter-select" id="sisler-team" onchange="sislerRender()"><option value="">All Teams</option></select>
+      <select class="filter-select" id="sisler-month" onchange="sislerRender()">
+        <option value="">All Months</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+      </select>
+      <select class="filter-select" id="sisler-min" onchange="sislerRender()">
+        <option value="0">Min 0 PA</option>
+        <option value="50">Min 50 PA</option>
+        <option value="100" selected>Min 100 PA</option>
+        <option value="200">Min 200 PA</option>
+        <option value="300">Min 300 PA</option>
+      </select>
+      <select class="filter-select" id="sisler-pos" onchange="sislerRender()"><option value="">All Positions</option></select>
+    </div>
+    <div id="sisler-sb-notice" class="notice-box" style="display:none;margin-bottom:10px">
+      ℹ️ Stolen base points are season-wide totals and are not affected by the month filter.
+    </div>
+
+    <div class="summary-cards" id="sisler-cards" style="display:none">
+      <div class="card"><div class="card-label">Players</div><div class="card-value" id="sislc-players">—</div></div>
+      <div class="card"><div class="card-label">Avg Production</div><div class="card-value" id="sislc-avgprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub">league average</div></div>
+      <div class="card"><div class="card-label">Top Production</div><div class="card-value" id="sislc-topprod" style="font-size:26px;letter-spacing:-1px">—</div><div class="card-sub" id="sislc-topprod-name">—</div></div>
+      <div class="card"><div class="card-label">Most Hitting Pts</div><div class="card-value" id="sislc-toppts">—</div><div class="card-sub" id="sislc-toppts-name">—</div></div>
+    </div>
+
+    <!-- By Player -->
+    <div id="sisler-pane-player">
+      <div class="table-wrap">
+        <table>
+          <thead id="sisler-player-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="player"       onclick="sislerSort('player')">Player</th>
+              <th data-col="team"         onclick="sislerSort('team')">Team</th>
+              <th data-col="pa"           onclick="sislerSort('pa')"           style="text-align:right">PA</th>
+              <th data-col="hit_pts"      onclick="sislerSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+              <th data-col="br_pts"       onclick="sislerSort('br_pts')"       style="text-align:right">BR Pts</th>
+              <th data-col="sisler_score" onclick="sislerSort('sisler_score')" style="text-align:right">Sisler Score</th>
+              <th data-col="max_pts"      onclick="sislerSort('max_pts')"      style="text-align:right">Max Possible</th>
+              <th data-col="production"   onclick="sislerSort('production')"   style="text-align:right">Production</th>
+              <th class="no-sort"         style="text-align:right">Log</th>
+            </tr>
+          </thead>
+          <tbody id="sisler-player-body">
+            <tr class="no-rows"><td colspan="10">Upload Plate Appearances CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Team -->
+    <div id="sisler-pane-team" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead id="sisler-team-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="team"         onclick="sislerTeamSort('team')">Team</th>
+              <th data-col="players"      onclick="sislerTeamSort('players')"      style="text-align:right">Players</th>
+              <th data-col="pa"           onclick="sislerTeamSort('pa')"           style="text-align:right">PA</th>
+              <th data-col="hit_pts"      onclick="sislerTeamSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+              <th data-col="br_pts"       onclick="sislerTeamSort('br_pts')"       style="text-align:right">BR Pts</th>
+              <th data-col="sisler_score" onclick="sislerTeamSort('sisler_score')" style="text-align:right">Sisler Score</th>
+              <th data-col="production"   onclick="sislerTeamSort('production')"   style="text-align:right">Production</th>
+              <th data-col="top_name"     onclick="sislerTeamSort('top_name')">Top Player</th>
+              <th data-col="top_prod"     onclick="sislerTeamSort('top_prod')"     style="text-align:right">Top Prod</th>
+            </tr>
+          </thead>
+          <tbody id="sisler-team-body">
+            <tr class="no-rows"><td colspan="10">Upload Plate Appearances CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Position -->
+    <div id="sisler-pane-position" style="display:none">
+      <div class="notice-box">
+        ℹ️ This dataset does not include a position column. To enable position breakdown, add a <strong>Pos</strong> or <strong>Position</strong> column to your CSV.
+      </div>
+    </div>
+
+  </div><!-- /panel-sisler -->
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SERIES STANDINGS                       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel" id="panel-series">
+
+    <div class="upload-section">
+      <div class="upload-section-title">Data Sources</div>
+      <div class="upload-row">
+        <div class="upload-item">
+          <label class="upload-btn" id="seriesbtn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg>
+            Team Game Log CSV
+            <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)">
+          </label>
+          <span class="upload-status" id="seriesst">No file loaded</span>
+          <button class="template-link" onclick="downloadTemplate('series')">↓ Download template</button>
+        </div>
+        <div class="upload-item" style="color:var(--text2);font-size:11px;align-self:center">
+          Use a Baseball Reference team game log. Add a <strong style="color:var(--text)">Tm</strong> column to combine multiple teams.
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="view-tabs" id="series-view-tabs">
+        <div class="view-tab" onclick="seriesSetView('timeline')">Timeline</div>
+        <div class="view-tab active" onclick="seriesSetView('table')">Series Records</div>
+        <div class="view-tab" onclick="seriesSetView('standings')">Standings</div>
+      </div>
+      <button class="dl-btn" onclick="downloadSeriesCSV()" title="Download Series Records as CSV">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="filters" id="series-filters">
+      <input type="text" class="search-box" id="series-search" placeholder="Search team…" oninput="seriesRender()" style="width:140px">
+      <select class="filter-select" id="series-league" onchange="seriesRender()">
+        <option value="">All Leagues</option>
+        <option value="AL">AL</option>
+        <option value="NL">NL</option>
+      </select>
+      <select class="filter-select" id="series-division" onchange="seriesRender()">
+        <option value="">All Divisions</option>
+        <option value="AL East">AL East</option>
+        <option value="AL Central">AL Central</option>
+        <option value="AL West">AL West</option>
+        <option value="NL East">NL East</option>
+        <option value="NL Central">NL Central</option>
+        <option value="NL West">NL West</option>
+      </select>
+      <select class="filter-select" id="series-outcome" onchange="seriesRender()">
+        <option value="">All Outcomes</option>
+        <option value="W">Series Wins</option>
+        <option value="L">Series Losses</option>
+        <option value="T">Series Ties</option>
+      </select>
+      <select class="filter-select" id="series-ha" onchange="seriesRender()">
+        <option value="">Home &amp; Away</option>
+        <option value="home">Home Only</option>
+        <option value="away">Away Only</option>
+      </select>
+      <select class="filter-select" id="series-length" onchange="seriesRender()">
+        <option value="">Any Length</option>
+        <option value="2">2-Game Series</option>
+        <option value="3">3-Game Series</option>
+        <option value="4">4-Game Series</option>
+        <option value="5">5+ Game Series</option>
+      </select>
+    </div>
+
+    <div class="summary-cards" id="series-cards" style="display:none">
+      <div class="card"><div class="card-label">Teams</div><div class="card-value" id="seriesc-teams">—</div></div>
+      <div class="card"><div class="card-label">Total Series</div><div class="card-value" id="seriesc-series">—</div></div>
+      <div class="card"><div class="card-label">Avg Series Win%</div><div class="card-value" id="seriesc-avgpct">—</div><div class="card-sub">across all teams</div></div>
+      <div class="card"><div class="card-label">Best Series Win%</div><div class="card-value" id="seriesc-top">—</div><div class="card-sub" id="seriesc-top-name">—</div></div>
+    </div>
+
+    <!-- ── Timeline view ── -->
+    <div id="series-pane-timeline" style="display:none">
+      <div class="series-legend">
+        <div class="legend-item"><div class="legend-swatch win"></div> Win</div>
+        <div class="legend-item"><div class="legend-swatch loss"></div> Loss</div>
+        <div class="legend-item"><div class="legend-swatch tie"></div> Tie</div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="legend-item"><div class="legend-swatch win home-ring"></div> Home game</div>
+        <div class="legend-item"><div class="legend-swatch win" style="opacity:.55"></div> Away game</div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="legend-item"><div class="legend-dot win"></div> Series win</div>
+        <div class="legend-item"><div class="legend-dot loss"></div> Series loss</div>
+        <div class="legend-item"><div class="legend-dot tie"></div> Series tie</div>
+        <div style="margin-left:auto;font-size:10px;color:var(--text2)">Click any series to see game details</div>
+      </div>
+      <div class="series-timeline-outer" id="series-timeline-outer">
+        <div class="series-tl-header">
+          <div class="series-tl-hcell-team">Team</div>
+          <div class="series-tl-hcell-dots">Series Results (click dot to expand game-by-game)</div>
+        </div>
+        <div id="series-timeline-body">
+          <div style="padding:40px;text-align:center;color:var(--text2)">Upload a Team Game Log CSV to view the Series Timeline.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Table view ── -->
+    <div id="series-pane-table">
+      <div class="table-wrap">
+        <table id="series-records-table">
+          <thead>
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th data-col="team"       onclick="seriesTableSortBy('team')">Team</th>
+              <th data-col="gW"         onclick="seriesTableSortBy('gW')"         style="text-align:right">Record</th>
+              <th data-col="winPct"     onclick="seriesTableSortBy('winPct')"     style="text-align:right">Win%</th>
+              <th data-col="sW"         onclick="seriesTableSortBy('sW')"         style="text-align:right">Series</th>
+              <th data-col="serWinPct"  onclick="seriesTableSortBy('serWinPct')"  style="text-align:right">Ser W%</th>
+              <th data-col="sW2"        onclick="seriesTableSortBy('sW')"         style="text-align:right">Ser W</th>
+              <th data-col="sL"         onclick="seriesTableSortBy('sL')"         style="text-align:right">Ser L</th>
+              <th data-col="sT"         onclick="seriesTableSortBy('sT')"         style="text-align:right">Ser T</th>
+              <th data-col="homeW"      onclick="seriesTableSortBy('homeW')"      style="text-align:right">Home Ser</th>
+              <th data-col="awayW"      onclick="seriesTableSortBy('awayW')"      style="text-align:right">Away Ser</th>
+            </tr>
+          </thead>
+          <tbody id="series-records-body">
+            <tr class="no-rows"><td colspan="11">Upload a Team Game Log CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Standings view ── -->
+    <div id="series-pane-standings" style="display:none">
+      <div id="series-standings-body"></div>
+    </div>
+
+  </div><!-- /panel-series -->
+
+
+</div><!-- /content -->
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SISLER GAME LOG MODAL                  -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="sisler-modal" onclick="sislerModalBgClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="sisler-modal-title">Plate Appearance Log</div>
+        <div class="modal-meta" id="sisler-modal-meta"></div>
+      </div>
+      <div class="modal-close" onclick="closeSislerModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="filters" style="margin-bottom:12px">
+        <select class="filter-select" id="sisler-modal-month" onchange="renderSislerModalTable()">
+          <option value="">All Months</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="no-sort">Date</th>
+              <th class="no-sort">Opp</th>
+              <th class="no-sort">Inn</th>
+              <th class="no-sort" style="text-align:center">RoB</th>
+              <th class="no-sort" style="text-align:center">Out</th>
+              <th class="no-sort">Event</th>
+              <th class="no-sort" style="text-align:right" title="Batter pts + runner advancement pts during this PA">Hitting Pts</th>
+              <th class="no-sort" style="text-align:right" title="Baserunning credit earned after reaching base on this PA">Trip BR Pts</th>
+              <th class="no-sort" style="text-align:right">Sisler Pts</th>
+              <th class="no-sort" style="text-align:right">Max Pts</th>
+            </tr>
+          </thead>
+          <tbody id="sisler-modal-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-stats">
+        <span>Sisler Score: <strong id="sm-total">—</strong></span>
+        <span>Max Possible: <strong id="sm-max">—</strong></span>
+        <span>Production: <strong id="sm-prod" style="color:var(--blue);font-size:14px">—</strong></span>
+        <span>PA shown: <strong id="sm-pa">—</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- GAME LOG MODAL                         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal" onclick="modalBgClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">Game Log</div>
+        <div class="modal-meta" id="modal-meta"></div>
+      </div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="filters" style="margin-bottom:12px">
+        <select class="filter-select" id="modal-month" onchange="renderModalTable()">
+          <option value="">All Months</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="no-sort">Date</th>
+              <th class="no-sort">Opp</th>
+              <th class="no-sort">Result</th>
+              <th class="no-sort">Dec</th>
+              <th class="no-sort" style="text-align:right">IP</th>
+              <th class="no-sort" style="text-align:right">ER</th>
+              <th class="no-sort" style="text-align:right">UER</th>
+              <th class="no-sort" style="text-align:right" id="modal-sgs-col">SGS</th>
+            </tr>
+          </thead>
+          <tbody id="modal-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-stats">
+        <span>Avg: <strong id="modal-avg">—</strong></span>
+        <span>Best: <strong class="c-green" id="modal-best">—</strong></span>
+        <span>Worst: <strong class="c-red" id="modal-worst">—</strong></span>
+        <span id="modal-starts-label">Starts shown: <strong id="modal-count">—</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SERIES DETAIL MODAL                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="series-modal" onclick="seriesModalBgClick(event)">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="series-modal-title">Series Detail</div>
+        <div class="modal-meta" id="series-modal-meta"></div>
+      </div>
+      <div class="modal-close" onclick="closeSeriesModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="no-sort" style="text-align:center">Gm</th>
+              <th class="no-sort">Date</th>
+              <th class="no-sort" style="text-align:center">H/A</th>
+              <th class="no-sort" style="text-align:center">Result</th>
+              <th class="no-sort" style="text-align:right">Score</th>
+              <th class="no-sort" style="text-align:center">Inn</th>
+              <th class="no-sort">Win</th>
+              <th class="no-sort">Loss</th>
+              <th class="no-sort">Save</th>
+              <th class="no-sort" style="text-align:right">Series</th>
+            </tr>
+          </thead>
+          <tbody id="series-modal-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-stats" id="series-modal-stats">
+        <span>Runs For: <strong id="sm-series-rf">—</strong></span>
+        <span>Runs Against: <strong id="sm-series-ra">—</strong></span>
+        <span>Run Diff: <strong id="sm-series-rd">—</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating tooltip for series/game hover -->
+<div id="series-tooltip"></div>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- COMPARE MODAL                          -->
+<!-- ═══════════════════════════════════════ -->
+<div id="cmp-modal" onclick="cmpBgClick(event)">
+  <div id="cmp-box">
+    <div class="cmp-header">
+      <div class="cmp-title">Compare Players</div>
+      <div class="cmp-controls">
+        <div class="cmp-search-wrap">
+          <input type="text" id="cmp-search" placeholder="Add player…" oninput="cmpSearchInput()" autocomplete="off">
+          <div class="cmp-dropdown" id="cmp-dropdown" style="display:none"></div>
+        </div>
+        <div class="modal-close" onclick="closeCompareModal()" style="margin-left:8px">✕</div>
+      </div>
+    </div>
+    <div class="cmp-body" id="cmp-body">
+      <div class="cmp-empty-state">Add 2–4 players using the search box above to start comparing.</div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ════════════════════════════════════════════
+// RAW CSV STORE (for Share-with-Data export)
+// ════════════════════════════════════════════
+const STORED_CSVS = {
+  egTotal:  null,
+  egEmpty:  null,
+  sgs:      null,
+  sislerPa: null,
+  sislerSb: null,
+  series:   null,
+};
+
+// ════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '—';
+  return (v * 100).toFixed(1) + '%';
+}
+
+function fmtN(v, d = 1) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toFixed(d);
+}
+
+// Baseball IP decimal → total outs
+// 6.1 = 6 innings + 1 out = 19 outs; 6.2 = 20 outs; 7.0 = 21 outs
+function ipToOuts(ip) {
+  const s = String(ip ?? '').trim();
+  if (!s || s === '' || isNaN(parseFloat(s))) return 0;
+  const dot = s.indexOf('.');
+  const full = parseInt(s, 10);
+  const partial = dot >= 0 ? parseInt(s[dot + 1] || '0', 10) : 0;
+  return full * 3 + partial;
+}
+
+function calcSGS(ip, er, uer) {
+  const outs = ipToOuts(ip);
+  const o16 = Math.min(outs, 18);
+  const o7p = Math.max(0, outs - 18);
+  er = parseFloat(er) || 0;
+  uer = parseFloat(uer) || 0;
+  return o16 * 1 + o7p * (4/3) - er * 1 - uer * 0.5;
+}
+
+function calcSGSPlus(ip, er, uer) {
+  const outs = ipToOuts(ip);
+  const o16 = Math.min(outs, 18);
+  const o7p = Math.max(0, outs - 18);
+  er = parseFloat(er) || 0;
+  uer = parseFloat(uer) || 0;
+  const erPen = er <= 3 ? er : 3 + (er - 3) * 1.5;
+  return o16 * 1 + o7p * (4/3) - erPen - uer * 0.5;
+}
+
+function egPctClass(p) {
+  if (p < 0.15) return 'eg-low';
+  if (p < 0.25) return 'eg-mid';
+  return 'eg-high';
+}
+
+function sgsClass(v) {
+  if (v >= 16) return 'c-green';
+  if (v >= 11) return 'c-lime';
+  if (v >= 5)  return 'c-text';
+  if (v >= 0)  return 'c-yellow';
+  return 'c-red';
+}
+
+// Handle CSVs where each row is a single double-quoted field containing comma-separated values.
+// Baseball Reference exports sometimes produce this format.
+function fixWrappedCSV(data) {
+  if (!data.length) return data;
+  const keys = Object.keys(data[0]);
+  // Wrapped format: exactly one key, and that key itself contains commas (it IS the header row)
+  if (keys.length !== 1 || !keys[0].includes(',')) return data;
+  const headerStr = keys[0];
+  const headers = headerStr.split(',').map(h => h.trim());
+  return data.map(row => {
+    const raw = String(row[headerStr] || '');
+    const values = raw.split(',');
+    const obj = {};
+    headers.forEach((h, i) => {
+      if (i === headers.length - 1) {
+        // Last column: re-join any excess split pieces so embedded commas (e.g. in
+        // "Single to LF (Line Drive, Hard); J. Player Scores") aren't truncated.
+        obj[h] = values.slice(i).join(',').trim();
+      } else {
+        obj[h] = (values[i] ?? '').trim();
+      }
+    });
+    return obj;
+  });
+}
+
+// Flexible column finder (case-insensitive, partial match fallback)
+function findCol(headers, ...names) {
+  for (const n of names) {
+    const h = headers.find(h => h && h.trim().toLowerCase() === n.toLowerCase());
+    if (h != null) return h;
+  }
+  for (const n of names) {
+    const h = headers.find(h => h && h.trim().toLowerCase().includes(n.toLowerCase()));
+    if (h != null) return h;
+  }
+  return null;
+}
+
+function parseDate(s) {
+  if (!s) return null;
+  // Remove game number suffix like (1) or (2)
+  const clean = s.trim().replace(/\s*\(\d+\)\s*$/, '');
+  const d = new Date(clean);
+  return isNaN(d) ? null : d;
+}
+
+function getMonth(s) {
+  const d = parseDate(s);
+  return d ? d.getMonth() + 1 : null;
+}
+
+function sortData(arr, col, dir) {
+  return [...arr].sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return dir === 'asc' ? (va < vb ? -1 : va > vb ? 1 : 0)
+                         : (va > vb ? -1 : va < vb ? 1 : 0);
+  });
+}
+
+function applySortIndicators(headerId, col, dir) {
+  document.querySelectorAll(`#${headerId} th`).forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.col === col) th.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+function populateTeamFilter(selectId, teams) {
+  const sel = document.getElementById(selectId);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Teams</option>' +
+    teams.map(t => `<option value="${esc(t)}"${t===cur?' selected':''}>${esc(t)}</option>`).join('');
+}
+
+
+// ════════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════════
+
+function switchStat(id) {
+  document.querySelectorAll('.stat-tab').forEach((t,i) => {
+    t.classList.toggle('active',
+      (id==='eg'&&i===0)||(id==='sgs'&&i===1)||(id==='sisler'&&i===2)||(id==='series'&&i===3));
+  });
+  document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+
+// ════════════════════════════════════════════
+// EMPTY GAMES — DATA
+// ════════════════════════════════════════════
+
+const EG = {
+  total: null,
+  empty: null,
+  combined: [],
+  view: 'player',
+  sortCol: 'pct', sortDir: 'desc',
+  teamSortCol: 'pct', teamSortDir: 'desc',
+};
+
+function loadEGFile(event, which) {
+  const file = event.target.files[0];
+  if (!file) return;
+  file.text().then(text => {
+    const key = which === 'total' ? 'egTotal' : 'egEmpty';
+    STORED_CSVS[key] = text;
+    const fixed = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    if (which === 'total') {
+      EG.total = fixed;
+      document.getElementById('egst-total').textContent = `✓ ${file.name} (${fixed.length} rows)`;
+      document.getElementById('egst-total').className = 'upload-status ready';
+      document.getElementById('egbtn-total').classList.add('loaded');
+    } else {
+      EG.empty = fixed;
+      document.getElementById('egst-empty').textContent = `✓ ${file.name} (${fixed.length} rows)`;
+      document.getElementById('egst-empty').className = 'upload-status ready';
+      document.getElementById('egbtn-empty').classList.add('loaded');
+    }
+    if (EG.total && EG.empty) egMerge();
+    persistCSV(which === 'total' ? 'eg-total' : 'eg-empty', text);
+  });
+}
+
+function egMerge() {
+  const tot = EG.total, emp = EG.empty;
+  const h = Object.keys(tot[0]);
+
+  const playerCol = findCol(h, 'Player');
+  const idCol     = findCol(h, 'Player-additional','playeradditional','PlayerID','player_id');
+  const teamCol   = findCol(h, 'Team');
+  const seasonCol = findCol(h, 'Season');
+  const countCol  = findCol(h, 'Count');
+  const posCol    = findCol(h, 'Pos','Position','position');
+
+  // Build empty-games lookup keyed by player-additional (or player name)
+  const empH = Object.keys(emp[0]);
+  const empId  = findCol(empH, 'Player-additional','playeradditional','PlayerID','player_id');
+  const empP   = findCol(empH, 'Player');
+  const empCnt = findCol(empH, 'Count');
+
+  const empMap = {};
+  for (const row of emp) {
+    const k = String(row[empId] || row[empP] || '').trim();
+    if (k) empMap[k] = row;
+  }
+
+  EG.combined = tot.map(row => {
+    const k   = String(row[idCol] || row[playerCol] || '').trim();
+    const eRow = empMap[k];
+    const total = parseFloat(row[countCol]) || 0;
+    const empty = eRow ? (parseFloat(eRow[empCnt]) || 0) : 0;
+    return {
+      player:  String(row[playerCol] || '').trim(),
+      team:    (t => t.length > 3 ? 'Multi' : t)(String(row[teamCol] || '').trim()),
+      season:  String(row[seasonCol] || '').trim(),
+      pos:     posCol ? String(row[posCol] || '').trim() : null,
+      total, empty,
+      pct: total > 0 ? empty / total : 0,
+    };
+  }).filter(r => r.player);
+
+  // Populate filters
+  const teams   = [...new Set(EG.combined.map(r=>r.team).filter(Boolean))].sort();
+  const seasons = [...new Set(EG.combined.map(r=>r.season).filter(Boolean))].sort();
+  populateTeamFilter('eg-team', teams);
+  const ss = document.getElementById('eg-season');
+  ss.innerHTML = '<option value="">All Seasons</option>' +
+    seasons.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+
+  // Populate position filter
+  const positions = [...new Set(EG.combined.map(r=>r.pos).filter(Boolean))].sort();
+  const egPosEl = document.getElementById('eg-pos');
+  if (egPosEl) {
+    const cur = egPosEl.value;
+    egPosEl.innerHTML = '<option value="">All Positions</option>' +
+      positions.map(p => `<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+  }
+
+  // Position detection (legacy pane)
+  const hasPos = EG.combined.some(r => r.pos && r.pos !== '');
+  if (hasPos) {
+    const egPosNotice = document.getElementById('eg-pos-notice');
+    const egPosPaneTable = document.getElementById('eg-pane-pos-table');
+    if (egPosNotice) egPosNotice.style.display = 'none';
+    if (egPosPaneTable) egPosPaneTable.style.display = 'block';
+  }
+
+  document.getElementById('eg-cards').style.display = 'grid';
+  egRender();
+}
+
+function egGetFiltered() {
+  const q    = document.getElementById('eg-search').value.toLowerCase();
+  const team = document.getElementById('eg-team').value;
+  const seas = document.getElementById('eg-season').value;
+  const minG = parseInt(document.getElementById('eg-min').value) || 0;
+  const pos  = document.getElementById('eg-pos') ? document.getElementById('eg-pos').value : '';
+  return EG.combined.filter(r => {
+    if (q    && !r.player.toLowerCase().includes(q)) return false;
+    if (team && r.team !== team) return false;
+    if (seas && r.season !== seas) return false;
+    if (r.total < minG) return false;
+    if (pos  && r.pos !== pos) return false;
+    return true;
+  });
+}
+
+function egSetView(v) {
+  EG.view = v;
+  document.querySelectorAll('#eg-view-tabs .view-tab').forEach((t,i) => {
+    t.classList.toggle('active', (v==='player'&&i===0)||(v==='team'&&i===1)||(v==='position'&&i===2));
+  });
+  document.getElementById('eg-pane-player').style.display   = v==='player'   ? 'block':'none';
+  document.getElementById('eg-pane-team').style.display     = v==='team'     ? 'block':'none';
+  document.getElementById('eg-pane-position').style.display = v==='position' ? 'block':'none';
+  egRender();
+}
+
+function egSort(col) {
+  EG.sortDir = EG.sortCol === col ? (EG.sortDir==='asc'?'desc':'asc') : (col==='player'||col==='team'?'asc':'desc');
+  EG.sortCol = col;
+  egRender();
+}
+function egTeamSort(col) {
+  EG.teamSortDir = EG.teamSortCol===col ? (EG.teamSortDir==='asc'?'desc':'asc') : (col==='team'?'asc':'desc');
+  EG.teamSortCol = col;
+  egRender();
+}
+
+function egRender() {
+  if (!EG.combined.length) return;
+  const data = egGetFiltered();
+
+  // Summary cards
+  document.getElementById('egc-players').textContent = data.length;
+  const avg = data.length ? data.reduce((s,r)=>s+r.pct,0)/data.length : 0;
+  document.getElementById('egc-avgpct').textContent = fmtPct(avg);
+  const mostEG  = data.reduce((b,r)=>(!b||r.empty>b.empty)?r:b, null);
+  const highPct = data.reduce((b,r)=>(!b||r.pct>b.pct)?r:b, null);
+  if (mostEG)  { document.getElementById('egc-most').textContent=mostEG.empty; document.getElementById('egc-most-name').textContent=mostEG.player; }
+  if (highPct) { document.getElementById('egc-toppct').textContent=fmtPct(highPct.pct); document.getElementById('egc-toppct-name').textContent=highPct.player; }
+
+  if (EG.view === 'player')   egRenderPlayer(data);
+  if (EG.view === 'team')     egRenderTeam(data);
+  if (EG.view === 'position') egRenderPosition(data);
+}
+
+function egRenderPlayer(data) {
+  const sorted = sortData(data, EG.sortCol, EG.sortDir);
+  applySortIndicators('eg-player-head', EG.sortCol, EG.sortDir);
+  const body = document.getElementById('eg-player-body');
+  if (!sorted.length) { body.innerHTML='<tr class="no-rows"><td colspan="7">No players match filters</td></tr>'; return; }
+  body.innerHTML = sorted.map((r,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(r.player)}</td>
+      <td><span class="col-team-tag">${esc(r.team)}</span></td>
+      <td style="color:var(--text2)">${esc(r.season)}</td>
+      <td class="col-right">${r.total}</td>
+      <td class="col-right">${r.empty}</td>
+      <td class="col-right ${egPctClass(r.pct)}" style="font-weight:600">${fmtPct(r.pct)}</td>
+    </tr>`).join('');
+}
+
+function egRenderTeam(data) {
+  const teamMap = {};
+  for (const r of data) {
+    if (!teamMap[r.team]) teamMap[r.team] = {team:r.team,players:0,total:0,empty:0};
+    teamMap[r.team].players++;
+    teamMap[r.team].total += r.total;
+    teamMap[r.team].empty += r.empty;
+  }
+  let teams = Object.values(teamMap).map(t=>({...t,pct:t.total>0?t.empty/t.total:0}));
+  teams = sortData(teams, EG.teamSortCol, EG.teamSortDir);
+  applySortIndicators('eg-team-head', EG.teamSortCol, EG.teamSortDir);
+  const body = document.getElementById('eg-team-body');
+  if (!teams.length) { body.innerHTML='<tr class="no-rows"><td colspan="6">No teams match filters</td></tr>'; return; }
+  body.innerHTML = teams.map((t,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(t.team)}</td>
+      <td class="col-right">${t.players}</td>
+      <td class="col-right">${t.total}</td>
+      <td class="col-right">${t.empty}</td>
+      <td class="col-right ${egPctClass(t.pct)}" style="font-weight:600">${fmtPct(t.pct)}</td>
+    </tr>`).join('');
+}
+
+function egRenderPosition(data) {
+  const hasPos = data.some(r => r.pos && r.pos !== '');
+  if (!hasPos) return;
+  const posMap = {};
+  for (const r of data) {
+    const p = r.pos || 'Unknown';
+    if (!posMap[p]) posMap[p] = {pos:p,players:0,total:0,empty:0};
+    posMap[p].players++;
+    posMap[p].total += r.total;
+    posMap[p].empty += r.empty;
+  }
+  const positions = Object.values(posMap)
+    .map(p=>({...p,pct:p.total>0?p.empty/p.total:0}))
+    .sort((a,b)=>b.pct-a.pct);
+  const body = document.getElementById('eg-pos-body');
+  body.innerHTML = positions.map((p,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(p.pos)}</td>
+      <td class="col-right">${p.players}</td>
+      <td class="col-right">${p.total}</td>
+      <td class="col-right">${p.empty}</td>
+      <td class="col-right ${egPctClass(p.pct)}" style="font-weight:600">${fmtPct(p.pct)}</td>
+    </tr>`).join('');
+}
+
+
+// ════════════════════════════════════════════
+// SIMPLE GAME SCORE — DATA
+// ════════════════════════════════════════════
+
+const SGS = {
+  raw: [],
+  view: 'player',
+  mode: 'sgs',
+  sortCol: 'avg', sortDir: 'desc',
+  teamSortCol: 'avg', teamSortDir: 'desc',
+};
+
+// For modal
+let modalPlayerData = [];
+let modalPlayerName = '';
+
+function loadSGSFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  file.text().then(text => {
+    STORED_CSVS.sgs = text;
+    const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    sgsBuildData(data);
+    document.getElementById('sgsst').textContent = `✓ ${file.name} (${data.length} rows)`;
+    document.getElementById('sgsst').className = 'upload-status ready';
+    document.getElementById('sgsbtn').classList.add('loaded');
+    persistCSV('sgs', text);
+  });
+}
+
+function sgsBuildData(raw) {
+  if (!raw.length) return;
+  const h = Object.keys(raw[0]);
+
+  const playerCol = findCol(h, 'Player');
+  const idCol     = findCol(h, 'Player-additional','playeradditional','PlayerID','player_id');
+  const dateCol   = findCol(h, 'Date');
+  const teamCol   = findCol(h, 'Team');
+  const oppCol    = findCol(h, 'Opp');
+  const resCol    = findCol(h, 'Result');
+  const decCol    = findCol(h, 'AppDec','App Dec','Dec');
+  const ipCol     = findCol(h, 'IP');
+  const erCol     = findCol(h, 'ER');
+  const uerCol    = findCol(h, 'UER');
+  const posCol    = findCol(h, 'Pos','Position');
+
+  SGS.raw = raw
+    .filter(r => r[playerCol] && r[ipCol] !== undefined && r[ipCol] !== '')
+    .map(r => {
+      const ip  = r[ipCol];
+      const er  = parseFloat(r[erCol])  || 0;
+      const uer = parseFloat(r[uerCol]) || 0;
+      const date = r[dateCol] || '';
+      return {
+        player:   String(r[playerCol] || '').trim(),
+        pid:      String(r[idCol]     || r[playerCol] || '').trim(),
+        date,
+        month:    getMonth(date),
+        team:     String(r[teamCol]   || '').trim(),
+        opp:      String(r[oppCol]    || '').trim(),
+        result:   String(r[resCol]    || '').trim(),
+        dec:      String(r[decCol]    || '').trim(),
+        ip, er, uer,
+        sgs:  calcSGS(ip, er, uer),
+        sgsp: calcSGSPlus(ip, er, uer),
+        pos:  posCol ? String(r[posCol] || '').trim() : null,
+      };
+    });
+
+  const teams = [...new Set(SGS.raw.map(r=>r.team).filter(Boolean))].sort();
+  populateTeamFilter('sgs-team', teams);
+
+  document.getElementById('sgs-cards').style.display = 'grid';
+  sgsRender();
+}
+
+function sgsGetFiltered() {
+  const q     = document.getElementById('sgs-search').value.toLowerCase();
+  const team  = document.getElementById('sgs-team').value;
+  const month = document.getElementById('sgs-month').value;
+  return SGS.raw.filter(r => {
+    if (q     && !r.player.toLowerCase().includes(q)) return false;
+    if (team  && r.team !== team) return false;
+    if (month && r.month !== parseInt(month)) return false;
+    return true;
+  });
+}
+
+function sgsAggregate(rows) {
+  const minGS = parseInt(document.getElementById('sgs-min').value) || 0;
+  const isPlus = SGS.mode === 'sgs+';
+  const map = {};
+  for (const r of rows) {
+    const k = r.pid || r.player;
+    if (!map[k]) map[k] = {player:r.player, pid:r.pid, team:r.team, pos:r.pos, gs:0, sum:0, scores:[]};
+    map[k].gs++;
+    const s = isPlus ? r.sgsp : r.sgs;
+    map[k].sum += s;
+    map[k].scores.push(s);
+    map[k].team = r.team; // last team
+  }
+  return Object.values(map)
+    .filter(p => p.gs >= minGS)
+    .map(p => ({
+      ...p,
+      avg:   p.gs > 0 ? p.sum / p.gs : 0,
+      best:  p.scores.length ? Math.max(...p.scores) : 0,
+      worst: p.scores.length ? Math.min(...p.scores) : 0,
+      total: p.sum,
+    }));
+}
+
+function sgsSetView(v) {
+  SGS.view = v;
+  document.querySelectorAll('#sgs-view-tabs .view-tab').forEach((t,i) => {
+    t.classList.toggle('active', (v==='player'&&i===0)||(v==='team'&&i===1));
+  });
+  document.getElementById('sgs-pane-player').style.display = v==='player' ? 'block':'none';
+  document.getElementById('sgs-pane-team').style.display   = v==='team'   ? 'block':'none';
+  sgsRender();
+}
+
+function sgsSetMode(m) {
+  SGS.mode = m;
+  document.getElementById('sgs-btn-sgs').classList.toggle('active', m==='sgs');
+  document.getElementById('sgs-btn-sgsplus').classList.toggle('active', m==='sgs+');
+  const lbl = m === 'sgs' ? 'SGS' : 'SGS+';
+  document.querySelectorAll('.sgs-lbl').forEach(el => el.textContent = lbl);
+  document.getElementById('sgsc-mode-lbl').textContent = lbl;
+  document.getElementById('modal-sgs-col').textContent = lbl;
+  sgsRender();
+  if (document.getElementById('modal').classList.contains('open')) renderModalTable();
+}
+
+function sgsSort(col) {
+  SGS.sortDir = SGS.sortCol===col ? (SGS.sortDir==='asc'?'desc':'asc') : (col==='player'||col==='team'?'asc':'desc');
+  SGS.sortCol = col;
+  sgsRender();
+}
+function sgsTeamSort(col) {
+  SGS.teamSortDir = SGS.teamSortCol===col ? (SGS.teamSortDir==='asc'?'desc':'asc') : (col==='team'||col==='topname'?'asc':'desc');
+  SGS.teamSortCol = col;
+  sgsRender();
+}
+
+function sgsRender() {
+  if (!SGS.raw.length) return;
+  const filtered  = sgsGetFiltered();
+  const players   = sgsAggregate(filtered);
+  const lbl       = SGS.mode === 'sgs' ? 'SGS' : 'SGS+';
+
+  // Summary cards
+  document.getElementById('sgsc-pitchers').textContent = players.length;
+  document.getElementById('sgsc-starts').textContent   = filtered.length;
+  const leagueAvg = players.length ? players.reduce((s,p)=>s+p.avg,0)/players.length : 0;
+  document.getElementById('sgsc-avg').textContent = fmtN(leagueAvg);
+  const top = players.reduce((b,p)=>(!b||p.avg>b.avg)?p:b, null);
+  if (top) { document.getElementById('sgsc-top').textContent=fmtN(top.avg); document.getElementById('sgsc-top-name').textContent=top.player; }
+
+  if (SGS.view === 'player')   sgsRenderPlayer(players);
+  if (SGS.view === 'team')     sgsRenderTeam(players);
+  if (SGS.view === 'position') sgsRenderPosition(players);
+}
+
+function sgsRenderPlayer(players) {
+  const sorted = sortData(players, SGS.sortCol, SGS.sortDir);
+  applySortIndicators('sgs-player-head', SGS.sortCol, SGS.sortDir);
+  const body = document.getElementById('sgs-player-body');
+  if (!sorted.length) { body.innerHTML='<tr class="no-rows"><td colspan="9">No pitchers match filters</td></tr>'; return; }
+  body.innerHTML = sorted.map((p,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(p.player)}</td>
+      <td><span class="col-team-tag">${esc(p.team)}</span></td>
+      <td class="col-right">${p.gs}</td>
+      <td class="col-right ${sgsClass(p.avg)}" style="font-weight:700">${fmtN(p.avg)}</td>
+      <td class="col-right c-green">${fmtN(p.best)}</td>
+      <td class="col-right c-red">${fmtN(p.worst)}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(p.total)}</td>
+      <td style="text-align:right"><button class="log-btn" data-pid="${esc(p.pid)}" data-player="${esc(p.player)}">Log</button></td>
+    </tr>`).join('');
+}
+
+function sgsRenderTeam(players) {
+  const teamMap = {};
+  for (const p of players) {
+    if (!teamMap[p.team]) teamMap[p.team] = {team:p.team,pitchers:0,gs:0,sum:0,topavg:-Infinity,topname:''};
+    teamMap[p.team].pitchers++;
+    teamMap[p.team].gs    += p.gs;
+    teamMap[p.team].sum   += p.total;
+    if (p.avg > teamMap[p.team].topavg) { teamMap[p.team].topavg=p.avg; teamMap[p.team].topname=p.player; }
+  }
+  let teams = Object.values(teamMap).map(t=>({...t,avg:t.gs>0?t.sum/t.gs:0}));
+  teams = sortData(teams, SGS.teamSortCol, SGS.teamSortDir);
+  applySortIndicators('sgs-team-head', SGS.teamSortCol, SGS.teamSortDir);
+  const body = document.getElementById('sgs-team-body');
+  if (!teams.length) { body.innerHTML='<tr class="no-rows"><td colspan="7">No teams match filters</td></tr>'; return; }
+  body.innerHTML = teams.map((t,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(t.team)}</td>
+      <td class="col-right">${t.pitchers}</td>
+      <td class="col-right">${t.gs}</td>
+      <td class="col-right ${sgsClass(t.avg)}" style="font-weight:700">${fmtN(t.avg)}</td>
+      <td>${esc(t.topname)}</td>
+      <td class="col-right c-green">${fmtN(t.topavg)}</td>
+    </tr>`).join('');
+}
+
+function sgsRenderPosition(players) {
+  const hasPos = players.some(p => p.pos && p.pos !== '');
+  if (!hasPos) return;
+  const posMap = {};
+  for (const p of players) {
+    const pos = p.pos || 'SP';
+    if (!posMap[pos]) posMap[pos] = {pos,pitchers:0,gs:0,sum:0};
+    posMap[pos].pitchers++;
+    posMap[pos].gs  += p.gs;
+    posMap[pos].sum += p.total;
+  }
+  const positions = Object.values(posMap)
+    .map(p=>({...p,avg:p.gs>0?p.sum/p.gs:0}))
+    .sort((a,b)=>b.avg-a.avg);
+  const body = document.getElementById('sgs-pos-body');
+  body.innerHTML = positions.map((p,i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(p.pos)}</td>
+      <td class="col-right">${p.pitchers}</td>
+      <td class="col-right">${p.gs}</td>
+      <td class="col-right ${sgsClass(p.avg)}" style="font-weight:700">${fmtN(p.avg)}</td>
+    </tr>`).join('');
+}
+
+
+// ════════════════════════════════════════════
+// GAME LOG MODAL
+// ════════════════════════════════════════════
+
+// Event delegation for log buttons
+document.getElementById('sgs-player-body').addEventListener('click', e => {
+  const btn = e.target.closest('.log-btn');
+  if (!btn) return;
+  openModal(btn.dataset.player, btn.dataset.pid);
+});
+
+function openModal(playerName, pid) {
+  // Gather all games for this player regardless of current filters
+  modalPlayerData = SGS.raw.filter(r => r.pid === pid || r.player === playerName);
+  modalPlayerName = playerName;
+  document.getElementById('modal-title').textContent = playerName;
+  document.getElementById('modal-month').value = '';
+  const lbl = SGS.mode === 'sgs' ? 'SGS' : 'SGS+';
+  document.getElementById('modal-sgs-col').textContent = lbl;
+  document.getElementById('modal').classList.add('open');
+  renderModalTable();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function modalBgClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function renderModalTable() {
+  const month   = document.getElementById('modal-month').value;
+  const isPlus  = SGS.mode === 'sgs+';
+
+  let data = modalPlayerData;
+  if (month) data = data.filter(r => r.month === parseInt(month));
+
+  // Sort chronologically
+  data = [...data].sort((a,b) => {
+    const da = parseDate(a.date), db = parseDate(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1; if (!db) return -1;
+    return da - db;
+  });
+
+  const scores = data.map(r => isPlus ? r.sgsp : r.sgs);
+  const avg    = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null;
+  const best   = scores.length ? Math.max(...scores) : null;
+  const worst  = scores.length ? Math.min(...scores) : null;
+
+  document.getElementById('modal-avg').textContent   = fmtN(avg);
+  document.getElementById('modal-best').textContent  = fmtN(best);
+  document.getElementById('modal-worst').textContent = fmtN(worst);
+  document.getElementById('modal-count').textContent = data.length;
+
+  // Update meta line
+  const team = data.length ? data[data.length-1].team : '';
+  const gs   = modalPlayerData.length;
+  document.getElementById('modal-meta').textContent =
+    `${team}  ·  ${gs} career start${gs!==1?'s':''} in dataset`;
+
+  const body = document.getElementById('modal-body');
+  if (!data.length) { body.innerHTML='<tr class="no-rows"><td colspan="8">No starts in this period</td></tr>'; return; }
+  body.innerHTML = data.map(r => {
+    const score = isPlus ? r.sgsp : r.sgs;
+    return `<tr>
+      <td style="color:var(--text2);white-space:nowrap">${esc(r.date)}</td>
+      <td><span class="col-team-tag">${esc(r.opp)}</span></td>
+      <td style="font-size:12px">${esc(r.result)}</td>
+      <td style="color:var(--text2);font-size:12px">${esc(r.dec)}</td>
+      <td class="col-right">${esc(r.ip)}</td>
+      <td class="col-right">${r.er}</td>
+      <td class="col-right" style="color:var(--text2)">${r.uer}</td>
+      <td class="col-right ${sgsClass(score)}" style="font-weight:700">${fmtN(score)}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+// ════════════════════════════════════════════
+// SISLER STAT — CORE MATH
+// ════════════════════════════════════════════
+
+// Point values for each base segment: [1st→2nd, 2nd→3rd, 3rd→home]
+const S_BASE = [0.5, 1.0, 1.5];
+
+// Points for runner starting at baseIdx advancing nBases (capped at home)
+function sRunnerPts(baseIdx, nBases) {
+  let pts = 0;
+  for (let i = 0; i < nBases && baseIdx + i < 3; i++) pts += S_BASE[baseIdx + i];
+  return pts;
+}
+
+// RoB string → occupied base indices (0=1st, 1=2nd, 2=3rd)
+// "1--" → [0], "-2-" → [1], "123" → [0,1,2]
+function sOccupied(rob) {
+  if (!rob || rob.length < 3) return [];
+  const b = [];
+  if (rob[0] !== '-') b.push(0);
+  if (rob[1] !== '-') b.push(1);
+  if (rob[2] !== '-') b.push(2);
+  return b;
+}
+
+// For walk-type events: forced chain starting from 1st base
+function sForcedBases(rob) {
+  if (!rob || rob.length < 3) return [];
+  const r1 = rob[0] !== '-', r2 = rob[1] !== '-', r3 = rob[2] !== '-';
+  const f = [];
+  if (r1) { f.push(0); if (r2) { f.push(1); if (r3) f.push(2); } }
+  return f;
+}
+
+// Batter point value by event
+function sBatterPts(ev) {
+  switch (ev) {
+    case '1B':  return 2;
+    case '2B':  return 2.5;
+    case '3B':  return 3.5;
+    case 'HR':  return 5;
+    case 'BB': case 'IBB': case 'HBP': case 'CI': return 2;
+    case 'RoE': return 1;
+    case 'FC':  return 1;
+    default:    return 0;
+  }
+}
+
+// Bases the hitter is responsible for per runner
+function sBasesResp(ev) {
+  switch (ev) {
+    case '2B': return 2;
+    case '3B': return 3;
+    case 'HR': return 4;
+    case '1B': case 'BB': case 'IBB': case 'HBP': case 'CI':
+    case 'RoE': case 'FC': case 'SF': case 'SH': case 'SAC': return 1;
+    default: return 0;
+  }
+}
+
+// Walk/HBP type: only forced runners advance
+function sIsWalk(ev) {
+  return ev === 'BB' || ev === 'IBB' || ev === 'HBP' || ev === 'CI';
+}
+
+// Maximum possible points for this base situation (a HR clears the bases)
+function sMaxPts(rob) {
+  let pts = 5;
+  for (const b of sOccupied(rob)) pts += sRunnerPts(b, 4);
+  return pts;
+}
+
+// Full PA calculation
+function sCalcPA(ev, rob) {
+  const bPts  = sBatterPts(ev);
+  const nBase = sBasesResp(ev);
+  if (nBase === 0) return { batter: 0, runner: 0, total: 0, max: sMaxPts(rob) };
+  const runners = sIsWalk(ev) ? sForcedBases(rob) : sOccupied(rob);
+  let rPts = 0;
+  for (const b of runners) rPts += sRunnerPts(b, nBase);
+  return { batter: bPts, runner: rPts, total: bPts + rPts, max: sMaxPts(rob) };
+}
+
+// Production formatted like batting average: .312
+function fmtProd(v) {
+  if (v == null || isNaN(v) || !isFinite(v)) return '—';
+  const n = Math.round(v * 1000);
+  return '.' + String(Math.min(Math.max(n, 0), 999)).padStart(3, '0');
+}
+
+function prodClass(v) {
+  if (v >= 0.45) return 'c-green';
+  if (v >= 0.38) return 'c-lime';
+  if (v >= 0.30) return 'c-text';
+  if (v >= 0.22) return 'c-yellow';
+  return 'c-red';
+}
+
+function sNormEvent(raw) {
+  const e = String(raw || '').trim();
+  // Short-code aliases (BBRef event finder uses these)
+  if (e === 'ROE' || e === 'Roe' || e === 'Error') return 'RoE';
+  if (e === 'IBB' || e === 'IW' || e === 'Intent Walk') return 'IBB';
+  // Full-word event names (some BBRef export flavors)
+  if (/^single/i.test(e))  return '1B';
+  if (/^double/i.test(e))  return '2B';
+  if (/^triple/i.test(e))  return '3B';
+  if (/^home\s*run/i.test(e) || e === 'HR') return 'HR';
+  if (/^walk/i.test(e) || e === 'BB') return 'BB';
+  if (/^hit\s+by\s+pitch/i.test(e) || e === 'HBP') return 'HBP';
+  if (/^fielder.s\s+choice/i.test(e)) return 'FC';
+  if (/^sac(rifice)?\s+(fly|hit|bunt)/i.test(e)) return e.toLowerCase().includes('fly') ? 'SF' : 'SH';
+  return e;
+}
+
+
+// ════════════════════════════════════════════
+// SISLER STAT — STATE & DATA
+// ════════════════════════════════════════════
+
+const SISLER = {
+  raw: [],
+  view: 'player',
+  mode: 'hitting',
+  brRecords: [],   // [{key, fullName, team, month, pts}] from PA descriptions
+  brSBMap: {},     // normKey → {fullName, team, sbPts} from SB CSV
+  paCounts: {},    // 'fullName|team' → PA count
+  debugDescCol: null,  // stores the resolved Play Description column name (or null)
+  debugSample: '',     // first Play Description value with a semicolon
+  debugColList: [],    // original CSV column names
+};
+
+let sislerModalData = [];
+let sislerModalName = '';
+let sislerModalBRByDate = {};   // date → total BR pts for the modal player
+
+function loadSislerFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  document.getElementById('sislerst').textContent = 'Parsing…';
+  file.text().then(text => {
+    STORED_CSVS.sislerPa = text;
+    const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    sislerBuild(data);
+    document.getElementById('sislerst').textContent = `✓ ${file.name} (${data.length.toLocaleString()} rows)`;
+    document.getElementById('sislerst').className = 'upload-status ready';
+    document.getElementById('sislerbtn').classList.add('loaded');
+    persistCSV('sisler-pa', text);
+  });
+}
+
+function sislerBuild(raw) {
+  if (!raw.length) return;
+  const h = Object.keys(raw[0]);
+
+  const batCol  = findCol(h, 'Batter');
+  const tmCol   = findCol(h, 'Tm', 'Team');
+  const oppCol  = findCol(h, 'Opp');
+  const dateCol = findCol(h, 'Date');
+  const evCol   = findCol(h, 'Event');
+  const innCol  = findCol(h, 'Inn');
+  const robCol  = findCol(h, 'RoB');
+  const outCol  = findCol(h, 'Out');
+  const descCol = findCol(h, 'Play Description', 'PlayDescription', 'Description', 'Play Desc');
+  const posCol  = findCol(h, 'Pos','Position','position');
+
+  SISLER.raw = raw.map(r => {
+    const ev  = sNormEvent(r[evCol]);
+    const rob = String(r[robCol] || '---').trim().padEnd(3, '-').slice(0, 3);
+    const pa  = sCalcPA(ev, rob);
+    const opp = String(r[oppCol] || '').trim().replace(/^@/, '');
+    const dt  = String(r[dateCol] || '').trim();
+    const tm  = String(r[tmCol] || '').trim();
+
+    return {
+      player:     String(r[batCol] || '').trim(),
+      team:       tm.length > 3 ? 'Multi' : tm,
+      opp,
+      date:       dt,
+      month:      getMonth(dt),
+      event:      ev,
+      inn:        String(r[innCol] || '').trim(),
+      rob,
+      outs:       String(r[outCol] || '').trim(),
+      batter_pts: pa.batter,
+      runner_pts: pa.runner,
+      total_pts:  pa.total,
+      max_pts:    pa.max,
+      tripBRPts:  0,   // filled in by buildBRFromRaw — future baserunning credit for this PA
+      pos:        posCol ? String(r[posCol] || '').trim() : '',
+    };
+  }).filter(r => r.player);
+
+  // Build PA count map
+  SISLER.paCounts = {};
+  for (const r of SISLER.raw) {
+    const k = r.player + '|' + r.team;
+    SISLER.paCounts[k] = (SISLER.paCounts[k] || 0) + 1;
+  }
+
+  // Build baserunning records from play descriptions (state machine)
+  SISLER.debugDescCol = descCol;
+  // Grab the first description that actually has a semicolon (runner movement candidate)
+  const _semiRow = descCol ? raw.find(r => String(r[descCol]||'').includes(';')) : null;
+  SISLER.debugSample  = _semiRow ? String(_semiRow[descCol]||'') : (descCol ? (raw.find(r => String(r[descCol]||'').trim())||{})[descCol] || '' : '');
+  SISLER.debugColList = Object.keys(raw[0] || {});
+  if (descCol) {
+    buildBRFromRaw(raw, { batCol, tmCol, evCol, innCol, descCol, dateCol });
+  }
+
+  const teams = [...new Set(SISLER.raw.map(r => r.team).filter(Boolean))].sort();
+  populateTeamFilter('sisler-team', teams);
+
+  // Populate position filter
+  const sislerPositions = [...new Set(SISLER.raw.map(r=>r.pos).filter(Boolean))].sort();
+  const sisPosEl = document.getElementById('sisler-pos');
+  if (sisPosEl) {
+    sisPosEl.innerHTML = '<option value="">All Positions</option>' +
+      sislerPositions.map(p => `<option value="${p}">${p}</option>`).join('');
+  }
+
+  document.getElementById('sisler-cards').style.display = 'grid';
+  sislerRender();
+}
+
+function sislerGetFiltered() {
+  const q     = document.getElementById('sisler-search').value.toLowerCase();
+  const team  = document.getElementById('sisler-team').value;
+  const month = document.getElementById('sisler-month').value;
+  const pos   = document.getElementById('sisler-pos') ? document.getElementById('sisler-pos').value : '';
+  return SISLER.raw.filter(r => {
+    if (q     && !r.player.toLowerCase().includes(q)) return false;
+    if (team  && r.team !== team) return false;
+    if (month && r.month !== parseInt(month)) return false;
+    if (pos   && r.pos !== pos) return false;
+    return true;
+  });
+}
+
+function sislerAggPlayers(rows) {
+  const minPA = parseInt(document.getElementById('sisler-min').value) || 0;
+  const map = {};
+  for (const r of rows) {
+    const k = r.player + '|' + r.team;
+    if (!map[k]) map[k] = { player: r.player, team: r.team, pa: 0, hit_pts: 0, trip_br_pts: 0, max_pts: 0 };
+    map[k].pa++;
+    map[k].hit_pts     += r.total_pts;          // batter pts + runner advancement during the PA
+    map[k].trip_br_pts += r.tripBRPts || 0;     // future baserunning credit from this PA
+    map[k].max_pts     += r.max_pts;
+    map[k].team = r.team;
+  }
+  return Object.values(map)
+    .filter(p => p.pa >= minPA)
+    .map(p => {
+      // Add stolen base pts (season-wide, not PA-level)
+      const normKey  = brKey(abbrevName(p.player), p.team);
+      const sbEntry  = SISLER.brSBMap ? (SISLER.brSBMap[normKey] || { sbPts: 0 }) : { sbPts: 0 };
+      const br_pts   = p.trip_br_pts + sbEntry.sbPts;
+      const sisler_score = p.hit_pts + br_pts;
+      const production   = p.max_pts > 0 ? sisler_score / p.max_pts : 0;
+      return { ...p, br_pts, sb_pts: sbEntry.sbPts, sisler_score, production };
+    });
+}
+
+
+// ════════════════════════════════════════════
+// SISLER STAT — RENDER
+// ════════════════════════════════════════════
+
+let sislerSortState     = { col: 'sisler_score', dir: 'desc' };
+let sislerTeamSortState = { col: 'sisler_score', dir: 'desc' };
+
+function sislerSort(col) {
+  sislerSortState.dir = sislerSortState.col === col
+    ? (sislerSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'player' || col === 'team' ? 'asc' : 'desc');
+  sislerSortState.col = col;
+  sislerRender();
+}
+
+function sislerTeamSort(col) {
+  sislerTeamSortState.dir = sislerTeamSortState.col === col
+    ? (sislerTeamSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'team' || col === 'top_name' ? 'asc' : 'desc');
+  sislerTeamSortState.col = col;
+  sislerRender();
+}
+
+function sislerSetView(v) {
+  SISLER.view = v;
+  document.querySelectorAll('#sisler-view-tabs .view-tab').forEach((t,i) => {
+    t.classList.toggle('active', (v==='player'&&i===0)||(v==='team'&&i===1)||(v==='position'&&i===2));
+  });
+  document.getElementById('sisler-pane-player').style.display   = v==='player'   ? 'block':'none';
+  document.getElementById('sisler-pane-team').style.display     = v==='team'     ? 'block':'none';
+  document.getElementById('sisler-pane-position').style.display = v==='position' ? 'block':'none';
+  sislerRender();
+}
+
+function sislerSetMode(m) {
+  // Mode toggle removed — Sisler is always displayed as unified combined score
+  SISLER.mode = m;
+  sislerRender();
+}
+
+function sislerRender() {
+  if (!SISLER.raw.length) return;
+  sislerUpdateSBNotice();
+
+  const filtered = sislerGetFiltered();
+  const players  = sislerAggPlayers(filtered);
+
+  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg Production';
+  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Top Production';
+  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = 'Most Sisler Score';
+
+  document.getElementById('sisler-cards').style.display = 'grid';
+  document.getElementById('sislc-players').textContent = players.length;
+  const avgProd = players.length
+    ? players.reduce((s, p) => s + p.production, 0) / players.length : 0;
+  document.getElementById('sislc-avgprod').textContent = fmtProd(avgProd);
+
+  const topProd  = players.reduce((b,p) => (!b || p.production     > b.production)     ? p : b, null);
+  const topScore = players.reduce((b,p) => (!b || p.sisler_score   > b.sisler_score)   ? p : b, null);
+  if (topProd) {
+    document.getElementById('sislc-topprod').textContent      = fmtProd(topProd.production);
+    document.getElementById('sislc-topprod-name').textContent = topProd.player;
+  }
+  if (topScore) {
+    document.getElementById('sislc-toppts').textContent      = fmtN(topScore.sisler_score);
+    document.getElementById('sislc-toppts-name').textContent = topScore.player;
+  }
+
+  if (SISLER.view === 'player') sislerRenderPlayer(players);
+  if (SISLER.view === 'team')   sislerRenderTeam(players);
+}
+
+function sislerRenderPlayer(players) {
+  const { col, dir } = sislerSortState;
+  const sorted = sortData(players, col, dir);
+  document.getElementById('sisler-player-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="player"       onclick="sislerSort('player')">Player</th>
+    <th data-col="team"         onclick="sislerSort('team')">Team</th>
+    <th data-col="pa"           onclick="sislerSort('pa')"           style="text-align:right">PA</th>
+    <th data-col="hit_pts"      onclick="sislerSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+    <th data-col="br_pts"       onclick="sislerSort('br_pts')"       style="text-align:right">BR Pts</th>
+    <th data-col="sisler_score" onclick="sislerSort('sisler_score')" style="text-align:right">Sisler Score</th>
+    <th data-col="max_pts"      onclick="sislerSort('max_pts')"      style="text-align:right">Max Possible</th>
+    <th data-col="production"   onclick="sislerSort('production')"   style="text-align:right">Production</th>
+    <th class="no-sort"         style="text-align:right">Log</th>
+  </tr>`;
+  applySortIndicators('sisler-player-head', col, dir);
+  const body = document.getElementById('sisler-player-body');
+  if (!sorted.length) { body.innerHTML = '<tr class="no-rows"><td colspan="10">No players match filters</td></tr>'; return; }
+
+  body.innerHTML = sorted.map((p, i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(p.player)}</td>
+      <td><span class="col-team-tag">${esc(p.team)}</span></td>
+      <td class="col-right">${p.pa}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(p.hit_pts)}</td>
+      <td class="col-right" style="color:var(--accent)">${fmtN(p.br_pts)}</td>
+      <td class="col-right" style="font-weight:700">${fmtN(p.sisler_score)}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(p.max_pts)}</td>
+      <td class="col-right ${prodClass(p.production)}" style="font-weight:700;font-size:14px;letter-spacing:-0.5px">${fmtProd(p.production)}</td>
+      <td style="text-align:right"><button class="log-btn" data-sname="${esc(p.player)}" data-steam="${esc(p.team)}">Log</button></td>
+    </tr>`).join('');
+}
+
+function sislerRenderTeam(players) {
+  const teamMap = {};
+  for (const p of players) {
+    if (!teamMap[p.team]) teamMap[p.team] = { team: p.team, players: 0, pa: 0, hit_pts: 0, br_pts: 0, sisler_score: 0, max_pts: 0, top_prod: -Infinity, top_name: '' };
+    teamMap[p.team].players++;
+    teamMap[p.team].pa           += p.pa;
+    teamMap[p.team].hit_pts      += p.hit_pts;
+    teamMap[p.team].br_pts       += p.br_pts;
+    teamMap[p.team].sisler_score += p.sisler_score;
+    teamMap[p.team].max_pts      += p.max_pts;
+    if (p.production > teamMap[p.team].top_prod) {
+      teamMap[p.team].top_prod = p.production;
+      teamMap[p.team].top_name = p.player;
+    }
+  }
+  let teams = Object.values(teamMap).map(t => ({ ...t, production: t.max_pts > 0 ? t.sisler_score / t.max_pts : 0 }));
+  teams = sortData(teams, sislerTeamSortState.col, sislerTeamSortState.dir);
+  document.getElementById('sisler-team-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="team"         onclick="sislerTeamSort('team')">Team</th>
+    <th data-col="players"      onclick="sislerTeamSort('players')"      style="text-align:right">Players</th>
+    <th data-col="pa"           onclick="sislerTeamSort('pa')"           style="text-align:right">PA</th>
+    <th data-col="hit_pts"      onclick="sislerTeamSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+    <th data-col="br_pts"       onclick="sislerTeamSort('br_pts')"       style="text-align:right">BR Pts</th>
+    <th data-col="sisler_score" onclick="sislerTeamSort('sisler_score')" style="text-align:right">Sisler Score</th>
+    <th data-col="production"   onclick="sislerTeamSort('production')"   style="text-align:right">Production</th>
+    <th data-col="top_name"     onclick="sislerTeamSort('top_name')">Top Player</th>
+    <th data-col="top_prod"     onclick="sislerTeamSort('top_prod')"     style="text-align:right">Top Prod</th>
+  </tr>`;
+  applySortIndicators('sisler-team-head', sislerTeamSortState.col, sislerTeamSortState.dir);
+  const body = document.getElementById('sisler-team-body');
+  if (!teams.length) { body.innerHTML = '<tr class="no-rows"><td colspan="10">No teams match filters</td></tr>'; return; }
+
+  body.innerHTML = teams.map((t, i) => `
+    <tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(t.team)}</td>
+      <td class="col-right">${t.players}</td>
+      <td class="col-right">${t.pa.toLocaleString()}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(t.hit_pts)}</td>
+      <td class="col-right" style="color:var(--accent)">${fmtN(t.br_pts)}</td>
+      <td class="col-right" style="font-weight:700">${fmtN(t.sisler_score)}</td>
+      <td class="col-right ${prodClass(t.production)}" style="font-weight:700;font-size:14px;letter-spacing:-0.5px">${fmtProd(t.production)}</td>
+      <td>${esc(t.top_name)}</td>
+      <td class="col-right ${prodClass(t.top_prod)}" style="font-weight:700;letter-spacing:-0.5px">${fmtProd(t.top_prod)}</td>
+    </tr>`).join('');
+}
+
+
+// ════════════════════════════════════════════
+// SISLER GAME LOG MODAL
+// ════════════════════════════════════════════
+
+document.getElementById('sisler-player-body').addEventListener('click', e => {
+  const btn = e.target.closest('.log-btn[data-sname]');
+  if (!btn) return;
+  openSislerModal(btn.dataset.sname, btn.dataset.steam);
+});
+
+let sislerModalSBPts = 0;  // total stolen base pts for the modal player (season-wide)
+
+function openSislerModal(name, team) {
+  sislerModalData = SISLER.raw.filter(r => r.player === name && r.team === team);
+  sislerModalName = name;
+
+  // Stolen base pts are season-wide (not attributable to individual PAs)
+  const playerKey = brKey(abbrevName(name), team);
+  const sbEntry = SISLER.brSBMap ? (SISLER.brSBMap[playerKey] || null) : null;
+  sislerModalSBPts = sbEntry ? (sbEntry.sbPts || 0) : 0;
+
+  document.getElementById('sisler-modal-title').textContent = name + ' — PA Log';
+  document.getElementById('sisler-modal-month').value = '';
+  document.getElementById('sisler-modal-meta').textContent =
+    `${team}  ·  ${sislerModalData.length} plate appearance${sislerModalData.length !== 1 ? 's' : ''} in dataset`;
+  document.getElementById('sisler-modal').classList.add('open');
+  renderSislerModalTable();
+}
+
+function closeSislerModal() {
+  document.getElementById('sisler-modal').classList.remove('open');
+}
+
+function sislerModalBgClick(e) {
+  if (e.target === document.getElementById('sisler-modal')) closeSislerModal();
+}
+
+// Extend ESC key to close sisler modal too
+const _origKeydown = document.onkeydown;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSislerModal(); });
+
+function renderSislerModalTable() {
+  const month = document.getElementById('sisler-modal-month').value;
+  let data = sislerModalData;
+  if (month) data = data.filter(r => r.month === parseInt(month));
+
+  data = [...data].sort((a, b) => {
+    const da = parseDate(a.date), db = parseDate(b.date);
+    if (!da && !db) return 0;
+    if (!da) return 1; if (!db) return -1;
+    return da - db;
+  });
+
+  // Each PA now has its own tripBRPts (future baserunning credit attributed directly)
+  const hittingTotal = data.reduce((s, r) => s + (r.total_pts   || 0), 0);
+  const tripBRTotal  = data.reduce((s, r) => s + (r.tripBRPts   || 0), 0);
+  // SB pts are season-wide — include in total but note they're not PA-level
+  const sislerTotal  = hittingTotal + tripBRTotal + (month ? 0 : sislerModalSBPts);
+  const maxPts       = data.reduce((s, r) => s + (r.max_pts     || 0), 0);
+  const prod         = maxPts > 0 ? sislerTotal / maxPts : 0;
+
+  document.getElementById('sm-total').textContent = fmtN(sislerTotal) + (sislerModalSBPts > 0 && !month ? ` (incl. ${fmtN(sislerModalSBPts)} SB)` : '');
+  document.getElementById('sm-max').textContent   = fmtN(maxPts);
+  document.getElementById('sm-prod').textContent  = fmtProd(prod);
+  document.getElementById('sm-pa').textContent    = data.length;
+
+  const body = document.getElementById('sisler-modal-body');
+  if (!data.length) { body.innerHTML = '<tr class="no-rows"><td colspan="10">No plate appearances in this period</td></tr>'; return; }
+
+  body.innerHTML = data.map(r => {
+    const tripBR   = r.tripBRPts || 0;
+    const sislerPts = r.total_pts + tripBR;
+    const cl = sislerPts > 0 ? 'c-green' : (sislerPts === 0 ? 'c-text' : 'c-red');
+
+    const brCell = tripBR > 0
+      ? `<td class="col-right" style="color:var(--accent)">${fmtN(tripBR)}</td>`
+      : `<td class="col-right" style="color:var(--text2)">—</td>`;
+
+    return `<tr>
+      <td style="color:var(--text2);white-space:nowrap;font-size:12px">${esc(r.date)}</td>
+      <td><span class="col-team-tag">${esc(r.opp)}</span></td>
+      <td style="color:var(--text2);font-size:12px">${esc(r.inn)}</td>
+      <td style="text-align:center;font-family:monospace;font-size:12px;letter-spacing:1px">${esc(r.rob)}</td>
+      <td style="text-align:center;color:var(--text2)">${esc(r.outs)}</td>
+      <td style="font-weight:600;font-size:12px">${esc(r.event)}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(r.total_pts)}</td>
+      ${brCell}
+      <td class="col-right ${cl}" style="font-weight:700">${fmtN(sislerPts)}</td>
+      <td class="col-right" style="color:var(--text2)">${fmtN(r.max_pts)}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+// ════════════════════════════════════════════
+// SISLER STAT — BASERUNNING
+// ════════════════════════════════════════════
+
+// "Matt Chapman Jr." → "M. Chapman"
+function abbrevName(full) {
+  const s = String(full || '').trim().replace(/\s+(Jr\.?|Sr\.?|II+V?I*|IV)\s*$/i, '').trim();
+  const parts = s.split(/\s+/);
+  if (parts.length < 2) return s;
+  return parts[0][0].toUpperCase() + '. ' + parts[parts.length - 1];
+}
+
+// Remove diacritics and lowercase for fuzzy matching
+// Uses explicit ̀-ͯ (not literal invisible combining chars) so the regex
+// compiles correctly in all browsers and editors.
+function normStr(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')   // remove combining diacriticals
+    .replace(/ /g, ' ')            // non-breaking space → regular space
+    .toLowerCase()
+    .trim();
+}
+
+// Composite state/lookup key: normAbbrev|normTeam
+function brKey(abbrev, team) {
+  return normStr(abbrev) + '|' + normStr(team);
+}
+
+// Parse runner movements from semicolon-delimited Play Description
+// Skips the first segment (batter's action). Returns [{abbrev, destination, isOut}]
+//   destination: 0=1st 1=2nd 2=3rd 3=home  -1=out
+// Uses [^;]*? (no Unicode char class) so the regex compiles reliably in all browsers.
+function parseRunnerMoves(desc) {
+  if (!desc) return [];
+  const moves = [];
+  const parts = desc.split(';').slice(1);
+  for (const raw of parts) {
+    const s = raw.trim();
+    if (!s) continue;
+    // Pattern: "X. Lastname [optional suffix]  Scores..."
+    const sm = s.match(/^([A-Z]\.\s+\S[^;]*?)\s+[Ss]cores/);
+    if (sm) { moves.push({ abbrev: sm[1].trim(), destination: 3, isOut: false }); continue; }
+    // Pattern: "X. Lastname  to NB"
+    const bm = s.match(/^([A-Z]\.\s+\S[^;]*?)\s+to\s+([123])B/i);
+    if (bm) { moves.push({ abbrev: bm[1].trim(), destination: parseInt(bm[2]) - 1, isOut: false }); continue; }
+    // Pattern: "X. Lastname  out at"
+    const om = s.match(/^([A-Z]\.\s+\S[^;]*?)\s+out\s+at/i);
+    if (om) { moves.push({ abbrev: om[1].trim(), destination: -1, isOut: true }); continue; }
+  }
+  return moves;
+}
+
+// Baserunning credit: every base the runner advances
+// S_BASE = [0.5, 1.0, 1.5] for 1st→2nd, 2nd→3rd, 3rd→home
+// Both the runner AND the hitter get credit independently.
+function calcRunnerBRPts(startBase, endBase) {
+  if (endBase <= startBase) return 0;
+  let pts = 0;
+  for (let i = startBase; i < endBase && i < 3; i++) pts += S_BASE[i];
+  return pts;
+}
+
+// State machine: walk all PAs in CSV order, track bases, accumulate BR records
+function buildBRFromRaw(raw, { batCol, tmCol, evCol, innCol, descCol, dateCol }) {
+  SISLER.brRecords = [];
+  let state      = {};  // normAbbrev|normTeam → {abbrev, fullName, team, base, origPaIdx}
+  let curInnKey  = '';
+  let sislerRawIdx = -1;  // tracks which SISLER.raw entry corresponds to current row
+
+  let _stateAdds = 0, _lookupHits = 0, _recordsPushed = 0;
+
+  for (const r of raw) {
+    const inn     = String(r[innCol]  || '').trim();
+    const date    = String(r[dateCol] || '').trim();
+    const innKey  = date + '|' + inn;
+
+    if (innKey !== curInnKey) { state = {}; curInnKey = innKey; }
+
+    const fullName = String(r[batCol] || '').trim();
+    if (!fullName) continue;
+    sislerRawIdx++;  // this row corresponds to SISLER.raw[sislerRawIdx]
+
+    const rawTm    = String(r[tmCol] || '').trim();
+    const team     = rawTm.length > 3 ? 'Multi' : rawTm;
+    const event    = sNormEvent(String(r[evCol] || '').trim());
+    const desc     = String(r[descCol] || '').trim();
+    const abbrev   = abbrevName(fullName);
+    const batNorm  = normStr(abbrev);
+    const teamNorm = normStr(team);
+
+    let batterFinalDest = -99;
+    const moves = parseRunnerMoves(desc);
+
+    for (const move of moves) {
+      const mNorm = normStr(move.abbrev);
+
+      // Batter mentioned in description — note final position, skip BR credit (Q2)
+      if (mNorm === batNorm) {
+        if (!move.isOut && move.destination >= 0) batterFinalDest = move.destination;
+        continue;
+      }
+
+      // Find runner in state: try exact key, then last-name fallback
+      let stKey = mNorm + '|' + teamNorm;
+      const exactHit = !!state[stKey];
+      if (!exactHit) {
+        const mLast = mNorm.split(' ').pop();
+        for (const k of Object.keys(state)) {
+          if (k.endsWith('|' + teamNorm) && k.split('|')[0].split(' ').pop() === mLast) {
+            stKey = k; break;
+          }
+        }
+      }
+      if (!state[stKey]) continue;
+
+      const entry = state[stKey];
+      _lookupHits++;
+      if (move.isOut) { delete state[stKey]; continue; }
+
+      const endBase = move.destination;
+      if (endBase > entry.base) {
+        const brPts = calcRunnerBRPts(entry.base, endBase);
+        if (brPts > 0) {
+          _recordsPushed++;
+          SISLER.brRecords.push({
+            key:       brKey(entry.abbrev, entry.team),
+            fullName:  entry.fullName,
+            team:      entry.team,
+            month:     getMonth(date),
+            date:      date,
+            pts:       brPts,
+            origPaIdx: entry.origPaIdx,  // which PA this runner originated from
+          });
+          // Attribute the advancement credit back to the originating PA
+          if (entry.origPaIdx >= 0 && SISLER.raw[entry.origPaIdx]) {
+            SISLER.raw[entry.origPaIdx].tripBRPts += brPts;
+          }
+        }
+      }
+      if (endBase >= 3) delete state[stKey];
+      else              state[stKey] = { ...entry, base: endBase };
+    }
+
+    // Place batter on base for future PAs, tracking which PA they originated from
+    let bFinalBase = -1;
+    if (['1B','BB','IBB','HBP','CI','RoE','FC'].includes(event)) bFinalBase = 0;
+    else if (event === '2B') bFinalBase = 1;
+    else if (event === '3B') bFinalBase = 2;
+    if (batterFinalDest >= 0) bFinalBase = batterFinalDest;
+
+    if (bFinalBase >= 0) {
+      state[batNorm + '|' + teamNorm] = { abbrev, fullName, team, base: bFinalBase, origPaIdx: sislerRawIdx };
+      _stateAdds++;
+    }
+  }
+  console.log('[BR] records:', SISLER.brRecords.length, '| lookups:', _lookupHits, '| pushed:', _recordsPushed, '| paIdx range: 0-', sislerRawIdx);
+}
+
+// ── Stolen Base CSV ───────────────────────────
+
+function buildBRFromSB(sbRows) {
+  SISLER.brSBMap = {};
+  if (!sbRows || !sbRows.length) return;
+  const h       = Object.keys(sbRows[0]);
+  const nameCol = findCol(h, 'Name', 'Player', 'Batter');
+  const tmCol   = findCol(h, 'Tm', 'Team');
+  const sb2Col  = findCol(h, 'SB2');
+  const sb3Col  = findCol(h, 'SB3');
+  const sbhCol  = findCol(h, 'SBH');
+
+  for (const r of sbRows) {
+    const full = String(r[nameCol] || '').trim();
+    if (!full) continue;
+    const rawTm  = String(r[tmCol] || '').trim();
+    const team   = rawTm.length > 3 ? 'Multi' : rawTm;
+    const abbrev = abbrevName(full);
+    const sbPts  = (parseInt(r[sb2Col]) || 0) * 0.5
+                 + (parseInt(r[sb3Col]) || 0) * 1.0
+                 + (parseInt(r[sbhCol]) || 0) * 1.5;
+    const k = brKey(abbrev, team);
+    if (!SISLER.brSBMap[k]) SISLER.brSBMap[k] = { fullName: full, team, sbPts: 0 };
+    SISLER.brSBMap[k].sbPts += sbPts;
+  }
+}
+
+function loadSBFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  file.text().then(text => {
+    STORED_CSVS.sislerSb = text;
+    buildBRFromSB(fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data));
+    document.getElementById('sbst').textContent = `✓ ${file.name}`;
+    document.getElementById('sbst').className = 'upload-status ready';
+    document.getElementById('sbbtn').classList.add('loaded');
+    sislerUpdateSBNotice();
+    if (SISLER.raw.length) sislerRender();
+    persistCSV('sisler-sb', text);
+  });
+}
+
+function sislerUpdateSBNotice() {
+  const monthActive = document.getElementById('sisler-month').value !== '';
+  const hasSB       = Object.keys(SISLER.brSBMap).length > 0;
+  const el          = document.getElementById('sisler-sb-notice');
+  if (el) el.style.display = (monthActive && hasSB) ? 'block' : 'none';
+}
+
+// ── BR Aggregation ────────────────────────────
+
+function getBRPlayers() {
+  const q      = document.getElementById('sisler-search').value.toLowerCase();
+  const team   = document.getElementById('sisler-team').value;
+  const month  = document.getElementById('sisler-month').value;
+  const minPA  = parseInt(document.getElementById('sisler-min').value) || 0;
+
+  const map = {};
+
+  // PA-description pts (can be month-filtered)
+  const paRecs = month
+    ? SISLER.brRecords.filter(r => r.month === parseInt(month))
+    : SISLER.brRecords;
+  for (const r of paRecs) {
+    if (!map[r.key]) map[r.key] = { key: r.key, fullName: r.fullName, team: r.team, paPts: 0, sbPts: 0 };
+    map[r.key].paPts += r.pts;
+  }
+
+  // SB pts are always season-wide
+  for (const [k, v] of Object.entries(SISLER.brSBMap)) {
+    if (!map[k]) map[k] = { key: k, fullName: v.fullName, team: v.team, paPts: 0, sbPts: 0 };
+    map[k].sbPts = v.sbPts;
+  }
+
+  return Object.values(map)
+    .map(p => ({ ...p, total_br_pts: p.paPts + p.sbPts,
+                        pa: SISLER.paCounts[p.fullName + '|' + p.team] || 0 }))
+    .filter(p => {
+      if (q    && !p.fullName.toLowerCase().includes(q)) return false;
+      if (team && p.team !== team) return false;
+      if (p.pa < minPA) return false;
+      return true;
+    });
+}
+
+// ── BR Sort States ────────────────────────────
+
+let sislerBRSortState      = { col: 'total_br_pts', dir: 'desc' };
+let sislerBRTeamSortState  = { col: 'total_br_pts', dir: 'desc' };
+let sislerCmbSortState     = { col: 'sisler_score', dir: 'desc' };
+let sislerCmbTeamSortState = { col: 'sisler_score', dir: 'desc' };
+
+function sislerBRSort(col) {
+  sislerBRSortState.dir = sislerBRSortState.col === col
+    ? (sislerBRSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'fullName' || col === 'team' ? 'asc' : 'desc');
+  sislerBRSortState.col = col;
+  sislerRender();
+}
+function sislerBRTeamSort(col) {
+  sislerBRTeamSortState.dir = sislerBRTeamSortState.col === col
+    ? (sislerBRTeamSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'team' ? 'asc' : 'desc');
+  sislerBRTeamSortState.col = col;
+  sislerRender();
+}
+function sislerCmbSort(col) {
+  sislerCmbSortState.dir = sislerCmbSortState.col === col
+    ? (sislerCmbSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'player' || col === 'team' ? 'asc' : 'desc');
+  sislerCmbSortState.col = col;
+  sislerRender();
+}
+function sislerCmbTeamSort(col) {
+  sislerCmbTeamSortState.dir = sislerCmbTeamSortState.col === col
+    ? (sislerCmbTeamSortState.dir === 'asc' ? 'desc' : 'asc')
+    : (col === 'team' ? 'asc' : 'desc');
+  sislerCmbTeamSortState.col = col;
+  sislerRender();
+}
+
+// ── BR Render ────────────────────────────────
+
+function sislerRenderBR() {
+  sislerUpdateSBNotice();
+  const players = getBRPlayers();
+  const hasSB   = Object.keys(SISLER.brSBMap).length > 0;
+
+  // Summary cards
+  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg BR Pts';
+  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Most BR Pts';
+  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = hasSB ? 'Total SB Pts' : 'PA Adv Pts';
+
+  document.getElementById('sislc-players').textContent = players.length;
+  const avgBR = players.length ? players.reduce((s,p) => s + p.total_br_pts, 0) / players.length : 0;
+  document.getElementById('sislc-avgprod').textContent = fmtN(avgBR);
+
+  const topBR = players.reduce((b,p) => (!b || p.total_br_pts > b.total_br_pts) ? p : b, null);
+  if (topBR) {
+    document.getElementById('sislc-topprod').textContent      = fmtN(topBR.total_br_pts);
+    document.getElementById('sislc-topprod-name').textContent = topBR.fullName;
+  }
+  if (hasSB) {
+    document.getElementById('sislc-toppts').textContent      = fmtN(players.reduce((s,p) => s + p.sbPts, 0));
+    document.getElementById('sislc-toppts-name').textContent = 'across all players';
+  } else {
+    document.getElementById('sislc-toppts').textContent      = fmtN(players.reduce((s,p) => s + p.paPts, 0));
+    document.getElementById('sislc-toppts-name').textContent = 'from advancements';
+  }
+
+  if (SISLER.view === 'player') sislerRenderBRPlayer(players, hasSB);
+  if (SISLER.view === 'team')   sislerRenderBRTeam(players, hasSB);
+}
+
+function sislerRenderBRPlayer(players, hasSB) {
+  const { col, dir } = sislerBRSortState;
+  const sorted = sortData(players, col, dir);
+
+  document.getElementById('sisler-player-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="fullName" onclick="sislerBRSort('fullName')">Player</th>
+    <th data-col="team"     onclick="sislerBRSort('team')">Team</th>
+    <th data-col="pa"       onclick="sislerBRSort('pa')"       style="text-align:right">PA</th>
+    <th data-col="paPts"    onclick="sislerBRSort('paPts')"    style="text-align:right">Adv Pts</th>
+    ${hasSB ? `<th data-col="sbPts" onclick="sislerBRSort('sbPts')" style="text-align:right">SB Pts</th>` : ''}
+    <th data-col="total_br_pts" onclick="sislerBRSort('total_br_pts')" style="text-align:right">Total BR Pts</th>
+    <th class="no-sort" style="text-align:right">Log</th>
+  </tr>`;
+
+  const body = document.getElementById('sisler-player-body');
+  if (!sorted.length) { body.innerHTML = `<tr class="no-rows"><td colspan="${hasSB?8:7}">No players match filters</td></tr>`; return; }
+
+  body.innerHTML = sorted.map((p, i) => `<tr>
+    <td class="col-rank">${i+1}</td>
+    <td class="col-name">${esc(p.fullName)}</td>
+    <td><span class="col-team-tag">${esc(p.team)}</span></td>
+    <td class="col-right">${p.pa}</td>
+    <td class="col-right">${fmtN(p.paPts)}</td>
+    ${hasSB ? `<td class="col-right" style="color:var(--green)">${fmtN(p.sbPts)}</td>` : ''}
+    <td class="col-right" style="font-weight:700">${fmtN(p.total_br_pts)}</td>
+    <td style="text-align:right"><button class="log-btn" data-sname="${esc(p.fullName)}" data-steam="${esc(p.team)}">Log</button></td>
+  </tr>`).join('');
+}
+
+function sislerRenderBRTeam(players, hasSB) {
+  const teamMap = {};
+  for (const p of players) {
+    if (!teamMap[p.team]) teamMap[p.team] = { team: p.team, players: 0, paPts: 0, sbPts: 0, top_br: -Infinity, top_name: '' };
+    teamMap[p.team].players++;
+    teamMap[p.team].paPts += p.paPts;
+    teamMap[p.team].sbPts += p.sbPts;
+    if (p.total_br_pts > teamMap[p.team].top_br) { teamMap[p.team].top_br = p.total_br_pts; teamMap[p.team].top_name = p.fullName; }
+  }
+  let teams = Object.values(teamMap).map(t => ({ ...t, total_br_pts: t.paPts + t.sbPts }));
+  teams = sortData(teams, sislerBRTeamSortState.col, sislerBRTeamSortState.dir);
+
+  document.getElementById('sisler-team-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="team"         onclick="sislerBRTeamSort('team')">Team</th>
+    <th data-col="players"      onclick="sislerBRTeamSort('players')"      style="text-align:right">Players</th>
+    <th data-col="paPts"        onclick="sislerBRTeamSort('paPts')"        style="text-align:right">Adv Pts</th>
+    ${hasSB ? `<th data-col="sbPts" onclick="sislerBRTeamSort('sbPts')" style="text-align:right">SB Pts</th>` : ''}
+    <th data-col="total_br_pts" onclick="sislerBRTeamSort('total_br_pts')" style="text-align:right">Total BR Pts</th>
+    <th data-col="top_name"     onclick="sislerBRTeamSort('top_name')">Top Player</th>
+    <th data-col="top_br"       onclick="sislerBRTeamSort('top_br')"       style="text-align:right">Top BR Pts</th>
+  </tr>`;
+
+  const body = document.getElementById('sisler-team-body');
+  if (!teams.length) { body.innerHTML = `<tr class="no-rows"><td colspan="${hasSB?8:7}">No teams match filters</td></tr>`; return; }
+
+  body.innerHTML = teams.map((t, i) => `<tr>
+    <td class="col-rank">${i+1}</td>
+    <td class="col-name">${esc(t.team)}</td>
+    <td class="col-right">${t.players}</td>
+    <td class="col-right">${fmtN(t.paPts)}</td>
+    ${hasSB ? `<td class="col-right" style="color:var(--green)">${fmtN(t.sbPts)}</td>` : ''}
+    <td class="col-right" style="font-weight:700">${fmtN(t.total_br_pts)}</td>
+    <td>${esc(t.top_name)}</td>
+    <td class="col-right">${fmtN(t.top_br)}</td>
+  </tr>`).join('');
+}
+
+// ── Combined Render ───────────────────────────
+
+function sislerGetCombinedPlayers() {
+  const hitFiltered = sislerGetFiltered();
+  const hitPlayers  = sislerAggPlayers(hitFiltered);
+  const brPlayers   = getBRPlayers();
+
+  // Build BR lookup by normalized key
+  const brLookup = {};
+  for (const p of brPlayers) brLookup[p.key] = p;
+
+  // Merge hitting players with their BR data
+  const combined = hitPlayers.map(p => {
+    const k  = brKey(abbrevName(p.player), p.team);
+    const br = brLookup[k] || { paPts: 0, sbPts: 0, total_br_pts: 0 };
+    return { player: p.player, team: p.team, pa: p.pa,
+             hit_pts: p.total_pts, br_pts: br.total_br_pts,
+             sisler_score: p.total_pts + br.total_br_pts };
+  });
+
+  // Players with BR data but no hitting rows under current filters
+  const hitKeys = new Set(hitPlayers.map(p => brKey(abbrevName(p.player), p.team)));
+  for (const p of brPlayers) {
+    if (!hitKeys.has(p.key)) {
+      combined.push({ player: p.fullName, team: p.team, pa: p.pa,
+                      hit_pts: 0, br_pts: p.total_br_pts, sisler_score: p.total_br_pts });
+    }
+  }
+
+  return combined;
+}
+
+function sislerRenderCombined() {
+  sislerUpdateSBNotice();
+  const players = sislerGetCombinedPlayers();
+
+  // Summary cards
+  document.querySelector('#sisler-cards .card:nth-child(2) .card-label').textContent = 'Avg Sisler Score';
+  document.querySelector('#sisler-cards .card:nth-child(3) .card-label').textContent = 'Top Sisler Score';
+  document.querySelector('#sisler-cards .card:nth-child(4) .card-label').textContent = 'Players';
+
+  document.getElementById('sislc-players').textContent = players.length;
+  const avgScore = players.length ? players.reduce((s,p) => s + p.sisler_score, 0) / players.length : 0;
+  document.getElementById('sislc-avgprod').textContent = fmtN(avgScore);
+
+  const topScore = players.reduce((b,p) => (!b || p.sisler_score > b.sisler_score) ? p : b, null);
+  if (topScore) {
+    document.getElementById('sislc-topprod').textContent      = fmtN(topScore.sisler_score);
+    document.getElementById('sislc-topprod-name').textContent = topScore.player;
+  }
+  document.getElementById('sislc-toppts').textContent      = players.length.toString();
+  document.getElementById('sislc-toppts-name').textContent = 'qualified players';
+
+  if (SISLER.view === 'player') sislerRenderCombinedPlayer(players);
+  if (SISLER.view === 'team')   sislerRenderCombinedTeam(players);
+}
+
+function sislerRenderCombinedPlayer(players) {
+  const { col, dir } = sislerCmbSortState;
+  const sorted = sortData(players, col, dir);
+
+  document.getElementById('sisler-player-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="player"       onclick="sislerCmbSort('player')">Player</th>
+    <th data-col="team"         onclick="sislerCmbSort('team')">Team</th>
+    <th data-col="pa"           onclick="sislerCmbSort('pa')"           style="text-align:right">PA</th>
+    <th data-col="hit_pts"      onclick="sislerCmbSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+    <th data-col="br_pts"       onclick="sislerCmbSort('br_pts')"       style="text-align:right">BR Pts</th>
+    <th data-col="sisler_score" onclick="sislerCmbSort('sisler_score')" style="text-align:right">Sisler Score</th>
+    <th class="no-sort" style="text-align:right">Log</th>
+  </tr>`;
+
+  const body = document.getElementById('sisler-player-body');
+  if (!sorted.length) { body.innerHTML = '<tr class="no-rows"><td colspan="8">No players match filters</td></tr>'; return; }
+
+  body.innerHTML = sorted.map((p, i) => `<tr>
+    <td class="col-rank">${i+1}</td>
+    <td class="col-name">${esc(p.player)}</td>
+    <td><span class="col-team-tag">${esc(p.team)}</span></td>
+    <td class="col-right">${p.pa}</td>
+    <td class="col-right">${fmtN(p.hit_pts)}</td>
+    <td class="col-right">${fmtN(p.br_pts)}</td>
+    <td class="col-right" style="font-weight:700">${fmtN(p.sisler_score)}</td>
+    <td style="text-align:right"><button class="log-btn" data-sname="${esc(p.player)}" data-steam="${esc(p.team)}">Log</button></td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════
+// SHARE WITH DATA — COMPRESS / EXPORT / PRELOAD
+// ════════════════════════════════════════════
+
+async function compressText(text) {
+  const bytes = new TextEncoder().encode(text);
+  const cs    = new CompressionStream('gzip');
+  const writer = cs.writable.getWriter();
+  const reader = cs.readable.getReader();
+  writer.write(bytes); writer.close();
+  const chunks = [];
+  while (true) { const { value, done } = await reader.read(); if (done) break; chunks.push(value); }
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out   = new Uint8Array(total);
+  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length; }
+  let bin = ''; for (let i = 0; i < out.length; i++) bin += String.fromCharCode(out[i]);
+  return btoa(bin);
+}
+
+async function decompressText(b64) {
+  const bin   = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const ds     = new DecompressionStream('gzip');
+  const writer = ds.writable.getWriter();
+  const reader = ds.readable.getReader();
+  writer.write(bytes); writer.close();
+  const chunks = [];
+  while (true) { const { value, done } = await reader.read(); if (done) break; chunks.push(value); }
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out   = new Uint8Array(total);
+  let off = 0; for (const c of chunks) { out.set(c, off); off += c.length; }
+  return new TextDecoder().decode(out);
+}
+
+async function exportWithData() {
+  const loaded = Object.values(STORED_CSVS).filter(Boolean).length;
+  if (!loaded) { alert('No data loaded yet — upload at least one CSV first.'); return; }
+
+  const btn = document.getElementById('share-btn');
+  btn.classList.add('busy'); btn.textContent = 'Compressing…';
+
+  try {
+    // Compress each stored CSV
+    const payload = {};
+    for (const [k, v] of Object.entries(STORED_CSVS)) {
+      if (v) payload[k] = await compressText(v);
+    }
+
+    // Serialize the DOM. fetch() is blocked on file:// URLs in Chrome, so we
+    // use outerHTML instead. Dynamic table rows don't matter — JS re-renders on load.
+    const C = '<' + '/script>';  // assembled at runtime so the HTML parser never sees it literally
+    const safeJson = JSON.stringify(payload).replace(new RegExp(C, 'gi'), '<\\/script>');
+    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+    // Use a flexible regex — outerHTML may reorder attributes vs. the original source.
+    html = html.replace(
+      new RegExp('<script[^>]*id="jm-preload"[^>]*>[\\s\\S]*?' + C, 'i'),
+      '<script id="jm-preload" type="application/json">' + safeJson + C
+    );
+
+    // Download
+    const blob = new Blob([html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'jm-advanced-stats.html';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+    console.error(e);
+  } finally {
+    btn.classList.remove('busy');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.81V9.5a.75.75 0 0 1-1.5 0V3.81L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"/></svg> Share with Data`;
+  }
+}
+
+// Preload data embedded in the HTML (runs on page load)
+async function loadPreloadedData() {
+  const el  = document.getElementById('jm-preload');
+  if (!el) return;
+  const raw = el.textContent.trim();
+  if (!raw || raw === 'null') return;
+
+  let payload;
+  try { payload = JSON.parse(raw); } catch { return; }
+  if (!payload || typeof payload !== 'object') return;
+
+  const parse = text => fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+
+  const setStatus = (stId, btnId, label) => {
+    const st  = document.getElementById(stId);
+    const btn = document.getElementById(btnId);
+    if (st)  { st.textContent = label; st.className = 'upload-status ready'; }
+    if (btn) btn.classList.add('loaded');
+  };
+
+  try {
+    // EG — both files needed before merge
+    const egTotP = payload.egTotal ? decompressText(payload.egTotal) : Promise.resolve(null);
+    const egEmpP = payload.egEmpty ? decompressText(payload.egEmpty) : Promise.resolve(null);
+    const [egTotText, egEmpText] = await Promise.all([egTotP, egEmpP]);
+    if (egTotText) {
+      STORED_CSVS.egTotal = egTotText;
+      EG.total = parse(egTotText);
+      setStatus('egst-total', 'egbtn-total', `✓ Pre-loaded (${EG.total.length} rows)`);
+    }
+    if (egEmpText) {
+      STORED_CSVS.egEmpty = egEmpText;
+      EG.empty = parse(egEmpText);
+      setStatus('egst-empty', 'egbtn-empty', `✓ Pre-loaded (${EG.empty.length} rows)`);
+    }
+    if (EG.total && EG.empty) egMerge();
+
+    // SGS
+    if (payload.sgs) {
+      const text = await decompressText(payload.sgs);
+      STORED_CSVS.sgs = text;
+      const data = parse(text);
+      sgsBuildData(data);
+      setStatus('sgsst', 'sgsbtn', `✓ Pre-loaded (${data.length} rows)`);
+    }
+
+    // Sisler PA
+    if (payload.sislerPa) {
+      const text = await decompressText(payload.sislerPa);
+      STORED_CSVS.sislerPa = text;
+      const data = parse(text);
+      sislerBuild(data);
+      setStatus('sislerst', 'sislerbtn', `✓ Pre-loaded (${data.length.toLocaleString()} rows)`);
+    }
+
+    // Sisler SB
+    if (payload.sislerSb) {
+      const text = await decompressText(payload.sislerSb);
+      STORED_CSVS.sislerSb = text;
+      buildBRFromSB(parse(text));
+      setStatus('sbst', 'sbbtn', '✓ Pre-loaded');
+      sislerUpdateSBNotice();
+      if (SISLER.raw.length) sislerRender();
+    }
+
+    // Series
+    if (payload.series) {
+      const text = await decompressText(payload.series);
+      STORED_CSVS.series = text;
+      const data = parse(text);
+      buildSeriesData(data);
+      setStatus('seriesst', 'seriesbtn', `✓ Pre-loaded (${data.length.toLocaleString()} rows)`);
+    }
+  } catch (e) {
+    console.error('Pre-load failed:', e);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadPreloadedData();
+  await loadServerCSVs();
+});
+
+// ════════════════════════════════════════════
+// SERVER PERSISTENCE (Vercel deployment)
+// When running on Vercel, CSVs are stored in Blob and shared across all visitors.
+// On a plain file:// open these calls fail silently — no effect.
+// ════════════════════════════════════════════
+
+async function persistCSV(key, text) {
+  try {
+    await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, content: text }),
+    });
+  } catch (_) { /* local / offline — silently ignore */ }
+}
+
+async function loadServerCSVs() {
+  let urls;
+  try {
+    const r = await fetch('/api/csvs');
+    if (!r.ok) return;
+    urls = await r.json();
+  } catch (_) { return; }
+
+  const parse = text => fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+
+  const setStatus = (stId, btnId, label) => {
+    const st  = document.getElementById(stId);
+    const btn = document.getElementById(btnId);
+    if (st)  { st.textContent = label; st.className = 'upload-status ready'; }
+    if (btn) btn.classList.add('loaded');
+  };
+
+  async function fetchText(url) {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return r.text();
+  }
+
+  try {
+    const [egTotText, egEmpText] = await Promise.all([
+      urls['eg-total'] ? fetchText(urls['eg-total']) : null,
+      urls['eg-empty'] ? fetchText(urls['eg-empty']) : null,
+    ]);
+    if (egTotText) {
+      EG.total = parse(egTotText);
+      setStatus('egst-total', 'egbtn-total', `✓ Server (${EG.total.length} rows)`);
+    }
+    if (egEmpText) {
+      EG.empty = parse(egEmpText);
+      setStatus('egst-empty', 'egbtn-empty', `✓ Server (${EG.empty.length} rows)`);
+    }
+    if (EG.total && EG.empty) egMerge();
+
+    if (urls['sgs']) {
+      const text = await fetchText(urls['sgs']);
+      if (text) { sgsBuildData(parse(text)); setStatus('sgsst', 'sgsbtn', `✓ Server`); }
+    }
+    if (urls['sisler-pa']) {
+      const text = await fetchText(urls['sisler-pa']);
+      if (text) { sislerBuild(parse(text)); setStatus('sislerst', 'sislerbtn', `✓ Server`); }
+    }
+    if (urls['sisler-sb']) {
+      const text = await fetchText(urls['sisler-sb']);
+      if (text) {
+        buildBRFromSB(parse(text));
+        setStatus('sbst', 'sbbtn', '✓ Server');
+        sislerUpdateSBNotice();
+        if (SISLER.raw.length) sislerRender();
+      }
+    }
+    if (urls['series']) {
+      const text = await fetchText(urls['series']);
+      if (text) { buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
+    }
+  } catch (e) {
+    console.warn('loadServerCSVs error:', e);
+  }
+}
+
+function sislerRenderCombinedTeam(players) {
+  const teamMap = {};
+  for (const p of players) {
+    if (!teamMap[p.team]) teamMap[p.team] = { team: p.team, players: 0, hit_pts: 0, br_pts: 0, top_score: -Infinity, top_name: '' };
+    teamMap[p.team].players++;
+    teamMap[p.team].hit_pts += p.hit_pts;
+    teamMap[p.team].br_pts  += p.br_pts;
+    if (p.sisler_score > teamMap[p.team].top_score) { teamMap[p.team].top_score = p.sisler_score; teamMap[p.team].top_name = p.player; }
+  }
+  let teams = Object.values(teamMap).map(t => ({ ...t, sisler_score: t.hit_pts + t.br_pts }));
+  teams = sortData(teams, sislerCmbTeamSortState.col, sislerCmbTeamSortState.dir);
+
+  document.getElementById('sisler-team-head').innerHTML = `<tr>
+    <th class="col-rank no-sort">#</th>
+    <th data-col="team"         onclick="sislerCmbTeamSort('team')">Team</th>
+    <th data-col="players"      onclick="sislerCmbTeamSort('players')"      style="text-align:right">Players</th>
+    <th data-col="hit_pts"      onclick="sislerCmbTeamSort('hit_pts')"      style="text-align:right">Hitting Pts</th>
+    <th data-col="br_pts"       onclick="sislerCmbTeamSort('br_pts')"       style="text-align:right">BR Pts</th>
+    <th data-col="sisler_score" onclick="sislerCmbTeamSort('sisler_score')" style="text-align:right">Sisler Score</th>
+    <th data-col="top_name"     onclick="sislerCmbTeamSort('top_name')">Top Player</th>
+    <th data-col="top_score"    onclick="sislerCmbTeamSort('top_score')"    style="text-align:right">Top Score</th>
+  </tr>`;
+
+  const body = document.getElementById('sisler-team-body');
+  if (!teams.length) { body.innerHTML = '<tr class="no-rows"><td colspan="8">No teams match filters</td></tr>'; return; }
+
+  body.innerHTML = teams.map((t, i) => `<tr>
+    <td class="col-rank">${i+1}</td>
+    <td class="col-name">${esc(t.team)}</td>
+    <td class="col-right">${t.players}</td>
+    <td class="col-right">${fmtN(t.hit_pts)}</td>
+    <td class="col-right">${fmtN(t.br_pts)}</td>
+    <td class="col-right" style="font-weight:700">${fmtN(t.sisler_score)}</td>
+    <td>${esc(t.top_name)}</td>
+    <td class="col-right">${fmtN(t.top_score)}</td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════
+// CSV TEMPLATES
+// ════════════════════════════════════════════
+
+const CSV_TEMPLATES = {
+
+  // ── Empty Games: Total Games ──────────────────────────────────────────
+  // One row per player-season. Baseball Reference: "Player Season Finder"
+  // (export the "Games" column for all players you want to track).
+  'eg-total': {
+    filename: 'template_total-games.csv',
+    comment: [
+      '# Total Games Template',
+      '# Source: Baseball Reference → Player Season Finder → Games column',
+      '# "Player-additional" is the BBRef player ID (e.g. judgear01). Required to match',
+      '#  across the two files when a player changed teams mid-season.',
+      '# "Season" column is optional but recommended for multi-year datasets.',
+    ],
+    headers: ['Player', 'Player-additional', 'Team', 'Season', 'Count', 'Pos'],
+    rows: [
+      ['Aaron Judge',      'judgeaa01', 'NYY', '2026', '95', 'RF'],
+      ['Mookie Betts',     'bettsmo01', 'LAD', '2026', '88', 'RF'],
+      ['Fernando Tatis Jr','tatisfe02', 'SDP', '2026', '90', 'SS'],
+    ],
+  },
+
+  // ── Empty Games: Empty Games ──────────────────────────────────────────
+  // Same player set, but the Count column is empty-game count only.
+  // "Player-additional" must match the Total Games file exactly.
+  'eg-empty': {
+    filename: 'template_empty-games.csv',
+    comment: [
+      '# Empty Games Template',
+      '# Source: Baseball Reference → Player Season Finder → filter by 0 RBI, 0 R, 0 H',
+      '# "Count" = number of games with 0 hits, 0 runs, 0 RBI for that player.',
+      '# "Player-additional" must exactly match the Total Games file.',
+    ],
+    headers: ['Player', 'Player-additional', 'Count'],
+    rows: [
+      ['Aaron Judge',      'judgeaa01', '24'],
+      ['Mookie Betts',     'bettsmo01', '19'],
+      ['Fernando Tatis Jr','tatisfe02', '28'],
+    ],
+  },
+
+  // ── Simple Game Score: Pitcher Game Log ──────────────────────────────
+  // One row per pitching start. BBRef: Pitcher → Game Logs → export CSV.
+  // "Player" and "Player-additional" are only required for multi-pitcher files;
+  // single-pitcher exports can omit them (the upload prompt sets the name).
+  'sgs': {
+    filename: 'template_pitcher-game-log.csv',
+    comment: [
+      '# SGS Pitcher Game Log Template',
+      '# Source: Baseball Reference → Pitcher page → Game Logs → Export',
+      '# For multiple pitchers, concatenate their CSVs and add "Player" +',
+      '# "Player-additional" columns.',
+      '# "AppDec" values: W, L, ND, S, H, BS, etc.',
+      '# "Result" values: W (team won), L (team lost).',
+    ],
+    headers: ['Player', 'Player-additional', 'Date', 'Team', 'Opp', 'Result', 'AppDec', 'IP', 'ER', 'UER', 'Pos'],
+    rows: [
+      ['Gerrit Cole',   'colegr01', '2026-04-03', 'NYY', 'BOS', 'W', 'W',  '7.0', '1', '0', 'SP'],
+      ['Gerrit Cole',   'colegr01', '2026-04-09', 'NYY', 'TOR', 'L', 'ND', '5.1', '3', '1', 'SP'],
+      ['Zack Wheeler',  'wheezac01','2026-04-04', 'PHI', 'ATL', 'W', 'W',  '8.0', '0', '0', 'SP'],
+    ],
+  },
+
+  // ── Sisler Stat: Plate Appearances ───────────────────────────────────
+  // One row per plate appearance. BBRef: Team → Play-by-Play → Export.
+  // "Play Description" drives baserunning credit — include it for BR pts.
+  // RoB format: three chars, each 1/2/3 or dash (e.g. "1--", "-23", "---").
+  'sisler-pa': {
+    filename: 'template_plate-appearances.csv',
+    comment: [
+      '# Plate Appearances Template (Sisler Stat)',
+      '# Source: Baseball Reference → Team → Schedule & Results → Game logs',
+      '#         → individual game → Play-by-Play → Export',
+      '# "RoB" = Runners on Base: 3-char string, positions 1/2/3 or dash.',
+      '#   e.g. "1--" = runner on 1st only, "-23" = runners on 2nd & 3rd.',
+      '# "Play Description" is optional but required for Baserunning Pts.',
+      '# "Tm" must be a ≤3-char team abbreviation (e.g. NYY, LAD).',
+    ],
+    headers: ['Date', 'Batter', 'Tm', 'Opp', 'Inn', 'RoB', 'Out', 'Event', 'Play Description', 'Pos'],
+    rows: [
+      ['2026-04-03', 'Aaron Judge',       'NYY', 'BOS', '1t', '---', '0', 'Home Run (fly ball)',      'Aaron Judge homered to left field.',    'RF'],
+      ['2026-04-03', 'Juan Soto',         'NYY', 'BOS', '1t', '1--', '1', 'Single (line drive)',      'Juan Soto singled to right field; G. Torres scored.', 'RF'],
+      ['2026-04-03', 'Jazz Chisholm Jr',  'NYY', 'BOS', '3t', '-2-', '0', 'Strikeout (swinging)',     'Jazz Chisholm Jr struck out swinging.', '3B'],
+      ['2026-04-03', 'Rafael Devers',     'BOS', 'NYY', '1b', '---', '0', 'Walk',                    'Rafael Devers walked.',                 '3B'],
+    ],
+  },
+
+  // ── Sisler Stat: Stolen Bases ─────────────────────────────────────────
+  // Season-level SB totals broken out by base stolen.
+  // BBRef: Player → Batting → Standard → export (add SB2/SB3/SBH columns).
+  // Or build manually: SB2 = steals of 2nd, SB3 = steals of 3rd, SBH = steals of home.
+  'sisler-sb': {
+    filename: 'template_stolen-bases.csv',
+    comment: [
+      '# Stolen Bases Template (Sisler Stat — Baserunning)',
+      '# One row per player. Season-level totals only.',
+      '# SB2 = stolen bases of 2nd base (0.5 pts each)',
+      '# SB3 = stolen bases of 3rd base (1.0 pt each)',
+      '# SBH = steals of home (1.5 pts each)',
+      '# "Tm" must match the abbreviation used in the Plate Appearances CSV.',
+    ],
+    headers: ['Name', 'Tm', 'SB2', 'SB3', 'SBH'],
+    rows: [
+      ['Elly De La Cruz', 'CIN', '28', '4', '1'],
+      ['Bobby Witt Jr',   'KCR', '22', '3', '0'],
+      ['Jose Caballero',  'TBR', '19', '2', '0'],
+    ],
+  },
+
+  // ── Series Standings: Team Game Log ──────────────────────────────────
+  // One row per team game. BBRef: Team → Schedule & Results → Export CSV.
+  // Add a "Tm" column when combining multiple teams into one file.
+  // The unnamed column (blank or "@") indicates home/away — keep it as-is
+  // from BBRef exports, or use a column named "H/A".
+  'series': {
+    filename: 'template_team-game-log.csv',
+    comment: [
+      '# Team Game Log Template (Series Standings)',
+      '# Source: Baseball Reference → Team → Schedule & Results → Export',
+      '# For multiple teams: concatenate CSVs, add a "Tm" column.',
+      '# The blank/"@" column = home/away (blank = home, @ = away).',
+      '# "W/L" values: W, L, T, W-wo (walkoff win), L-wo (walkoff loss).',
+      '# "Inn" = innings played; leave blank or "9" for regulation games.',
+      '# Postponed/cancelled rows (no score) are automatically skipped.',
+    ],
+    headers: ['Tm', 'Date', '', 'Opp', 'W/L', 'R', 'RA', 'Inn', 'Win', 'Loss', 'Save'],
+    rows: [
+      ['NYY', '2026-04-03', '',  'BOS', 'W',    '5', '2', '',  'Cole G.',    'Sale C.',   ''],
+      ['NYY', '2026-04-04', '',  'BOS', 'L',    '2', '6', '',  'Crawford K.','Cortes N.', ''],
+      ['NYY', '2026-04-05', '',  'BOS', 'W',    '4', '1', '',  'Schmidt C.', 'Paxton J.', 'Holmes C.'],
+      ['NYY', '2026-04-07', '@', 'TBR', 'W',    '3', '2', '10','Stout E.',   'Fairbanks P.',''],
+      ['NYY', '2026-04-08', '@', 'TBR', 'L',    '1', '4', '',  'Springs J.', 'Severino L.',''],
+    ],
+  },
+};
+
+/**
+ * Downloads a CSV template for the given upload type.
+ * Includes a comment block at the top explaining the format.
+ */
+function downloadTemplate(type) {
+  const tmpl = CSV_TEMPLATES[type];
+  if (!tmpl) return;
+  const lines = [
+    ...tmpl.comment,
+    tmpl.headers.join(','),
+    ...tmpl.rows.map(row => row.map(v => {
+      const s = String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(',')),
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = tmpl.filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════
+// CSV DOWNLOAD
+// ════════════════════════════════════════════
+
+function downloadCSV(rows, filename) {
+  if (!rows || !rows.length) { alert('No data to download.'); return; }
+  const headers = Object.keys(rows[0]);
+  const csvEsc  = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const lines   = [headers.join(','), ...rows.map(r => headers.map(h => csvEsc(r[h])).join(','))];
+  const blob    = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function downloadEG() {
+  if (!EG.combined || !EG.combined.length) { alert('No Empty Games data loaded.'); return; }
+  downloadCSV(EG.combined.map(r => ({
+    Player: r.player,
+    Team:   r.team,
+    Season: r.season,
+    Games:  r.total,
+    EmptyGames: r.empty,
+    'EG%': (r.pct * 100).toFixed(1),
+  })), 'empty-games.csv');
+}
+
+function downloadSGS() {
+  if (!SGS.raw || !SGS.raw.length) { alert('No SGS data loaded.'); return; }
+  const mode = (SGS.mode === 'sgs+') ? 'SGS+' : 'SGS';
+  const agg  = sgsAggregate(SGS.raw);
+  downloadCSV(agg.map(r => ({
+    Player:              r.player,
+    Team:                r.team,
+    GS:                  r.gs,
+    [`Avg ${mode}`]:     r.avg.toFixed(2),
+    Best:                r.best,
+    Worst:               r.worst,
+    [`Total ${mode}`]:   r.total.toFixed(1),
+  })), 'simple-game-score.csv');
+}
+
+function downloadSislerCombined() {
+  if (!SISLER.raw || !SISLER.raw.length) { alert('No Sisler data loaded.'); return; }
+  const map = {};
+  for (const r of SISLER.raw) {
+    const k = r.player + '|' + r.team;
+    if (!map[k]) map[k] = { Player: r.player, Team: r.team, PA: 0, HittingPts: 0, TripBRPts: 0, MaxPossible: 0 };
+    map[k].PA++;
+    map[k].HittingPts  += r.total_pts  || 0;
+    map[k].TripBRPts   += r.tripBRPts  || 0;
+    map[k].MaxPossible += r.max_pts    || 0;
+  }
+  const rows = Object.values(map).map(r => {
+    const normKey  = brKey(abbrevName(r.Player), r.Team);
+    const sbEntry  = SISLER.brSBMap ? (SISLER.brSBMap[normKey] || { sbPts: 0 }) : { sbPts: 0 };
+    const BRPts    = r.TripBRPts + sbEntry.sbPts;
+    const Score    = r.HittingPts + BRPts;
+    return {
+      Player:       r.Player,
+      Team:         r.Team,
+      PA:           r.PA,
+      HittingPts:   r.HittingPts.toFixed(2),
+      BRPts:        BRPts.toFixed(2),
+      SBPts:        sbEntry.sbPts.toFixed(2),
+      SislerScore:  Score.toFixed(2),
+      MaxPossible:  r.MaxPossible.toFixed(2),
+      Production:   r.MaxPossible > 0 ? (Score / r.MaxPossible * 100).toFixed(1) : '0.0',
+    };
+  });
+  downloadCSV(rows, 'sisler-combined.csv');
+}
+
+// Kept for backwards compatibility — redirect to combined
+function downloadSislerHitting() { downloadSislerCombined(); }
+function downloadSislerBR()      { downloadSislerCombined(); }
+
+// ════════════════════════════════════════════
+// PLAYER COMPARISON MODAL
+// ════════════════════════════════════════════
+
+let cmpPlayers = [];   // [{name, team}]
+
+function openCompareModal() {
+  document.getElementById('cmp-modal').classList.add('open');
+  cmpRender();
+}
+function closeCompareModal() {
+  document.getElementById('cmp-modal').classList.remove('open');
+  document.getElementById('cmp-search').value = '';
+  document.getElementById('cmp-dropdown').style.display = 'none';
+}
+function cmpBgClick(e) {
+  if (e.target === document.getElementById('cmp-modal')) closeCompareModal();
+}
+
+// Determine what data exists for a player
+function cmpGetPlayerType(name, team) {
+  const isHitter  = (SISLER.raw || []).some(r => r.player === name && r.team === team);
+  const isPitcher = (SGS.raw    || []).some(r => r.player === name && r.team === team);
+  if (isHitter && isPitcher) return 'both';
+  if (isHitter)  return 'hitter';
+  if (isPitcher) return 'pitcher';
+  return 'unknown';
+}
+
+// Build searchable player list from all loaded data
+function cmpPlayerList() {
+  const seen = new Set();
+  const list = [];
+  for (const r of (SISLER.raw || [])) {
+    const k = r.player + '|' + r.team;
+    if (!seen.has(k)) { seen.add(k); list.push({ name: r.player, team: r.team, src: 'sisler' }); }
+  }
+  for (const r of (SGS.raw || [])) {
+    const k = r.player + '|' + r.team;
+    if (!seen.has(k)) { seen.add(k); list.push({ name: r.player, team: r.team, src: 'sgs' }); }
+  }
+  return list;
+}
+
+function cmpSearchInput() {
+  const q  = normStr(document.getElementById('cmp-search').value);
+  const dd = document.getElementById('cmp-dropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+
+  const all     = cmpPlayerList();
+  const already = new Set(cmpPlayers.map(p => p.name + '|' + p.team));
+  const matches = all.filter(p => normStr(p.name).includes(q) || normStr(p.team).includes(q))
+                     .filter(p => !already.has(p.name + '|' + p.team))
+                     .slice(0, 12);
+
+  if (!matches.length) {
+    dd.innerHTML = '<div class="cmp-dd-empty">No players found</div>';
+    dd.style.display = 'block';
+    return;
+  }
+  dd.innerHTML = matches.map(p =>
+    `<div class="cmp-dd-item" onclick="cmpAddPlayer(${JSON.stringify(p.name)}, ${JSON.stringify(p.team)})">
+      <span>${esc(p.name)}</span><small>${esc(p.team)}</small>
+    </div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+
+function cmpAddPlayer(name, team) {
+  if (cmpPlayers.length >= 4) { alert('Maximum 4 players at a time.'); return; }
+  if (cmpPlayers.find(p => p.name === name && p.team === team)) return;
+  cmpPlayers.push({ name, team });
+  document.getElementById('cmp-search').value = '';
+  document.getElementById('cmp-dropdown').style.display = 'none';
+  cmpRender();
+}
+
+function cmpRemovePlayer(idx) {
+  cmpPlayers.splice(idx, 1);
+  cmpRender();
+}
+
+// Get Sisler (hitter) stats for one player
+function cmpGetHitterStats(name, team) {
+  const rows = (SISLER.raw || []).filter(r => r.player === name && r.team === team);
+  if (!rows.length) return null;
+  const pa      = rows.length;
+  const hitPts  = rows.reduce((s, r) => s + (r.total_pts  || 0), 0);
+  const tripBR  = rows.reduce((s, r) => s + (r.tripBRPts  || 0), 0);
+  const normKey = normStr(abbrevName(name)) + '|' + normStr(team);
+  const sbEntry = SISLER.brSBMap ? (SISLER.brSBMap[normKey] || { sbPts: 0 }) : { sbPts: 0 };
+  const brTotal = tripBR + sbEntry.sbPts;
+  const mx      = rows.reduce((s, r) => s + (r.max_pts || 0), 0);
+  const score   = hitPts + brTotal;
+  const prod    = mx > 0 ? score / mx * 100 : 0;
+  // Empty Games rate
+  const egRow = (EG.combined || []).find(r => r.player === name && r.team === team);
+  const egPct = egRow ? egRow.pct : null;
+  return { pa, hitPts, brTotal, score, mx, prod, egPct };
+}
+
+// Get SGS (pitcher) stats for one player
+function cmpGetPitcherStats(name, team) {
+  const rows = (SGS.raw || []).filter(r => r.player === name && r.team === team);
+  if (!rows.length) return null;
+  const gs   = rows.length;
+  const mode = SGS.mode === 'sgs+' ? 'sgsp' : 'sgs';
+  const scores = rows.map(r => Number(r[mode]) || 0);
+  const avg  = scores.reduce((s, v) => s + v, 0) / gs;
+  const best = Math.max(...scores);
+  const worst= Math.min(...scores);
+  const total= scores.reduce((s, v) => s + v, 0);
+  let ip = 0;
+  for (const r of rows) {
+    const v = String(r.ip || '0'); const p = v.split('.');
+    ip += (Number(p[0]) || 0) + ((Number(p[1]) || 0) / 3);
+  }
+  const era_num = rows.reduce((s, r) => s + (Number(r.er) || 0), 0);
+  const era = ip > 0 ? (era_num / ip * 9).toFixed(2) : '—';
+  return { gs, avg, best, worst, total, era };
+}
+
+function cmpRender() {
+  const body = document.getElementById('cmp-body');
+  const n    = cmpPlayers.length;
+
+  if (!n) {
+    body.innerHTML = '<div class="cmp-empty-state">Add 2–4 players using the search box above to start comparing.</div>';
+    return;
+  }
+
+  const noData = !SISLER.raw?.length && !SGS.raw?.length;
+  if (noData) {
+    body.innerHTML = '<div class="cmp-empty-state">No data loaded yet — upload a CSV first.</div>';
+    return;
+  }
+
+  const cols       = Math.min(n, 4);
+  const emptySlots = Array(4 - cols).fill(null);
+
+  // Classify players
+  const playerTypes = cmpPlayers.map(p => cmpGetPlayerType(p.name, p.team));
+  const hasHitters  = playerTypes.some(t => t === 'hitter' || t === 'both');
+  const hasPitchers = playerTypes.some(t => t === 'pitcher' || t === 'both');
+
+  // Build header
+  let html = `<div class="cmp-grid" style="grid-template-columns: 160px repeat(4, 1fr)">`;
+  html += `<div class="cmp-col-header" style="color:var(--text2);font-weight:400;font-size:11px">STAT</div>`;
+  for (let i = 0; i < cols; i++) {
+    const p = cmpPlayers[i];
+    const typeBadge = playerTypes[i] === 'pitcher' ? '<div style="font-size:9px;color:var(--blue);margin-top:2px">PITCHER</div>'
+                    : playerTypes[i] === 'hitter'  ? '<div style="font-size:9px;color:var(--green);margin-top:2px">HITTER</div>'
+                    : playerTypes[i] === 'both'    ? '<div style="font-size:9px;color:var(--text2);margin-top:2px">TWO-WAY</div>'
+                    : '';
+    html += `<div class="cmp-col-header">
+      <button class="cmp-remove-btn" onclick="cmpRemovePlayer(${i})" title="Remove">✕</button>
+      <div class="cmp-player-name">${esc(p.name)}</div>
+      <div class="cmp-player-team">${esc(p.team)}</div>
+      ${typeBadge}
+    </div>`;
+  }
+  for (let i = 0; i < emptySlots.length; i++) {
+    html += `<div class="cmp-add-col" style="color:var(--text2);font-size:11px">—</div>`;
+  }
+
+  // Helper: render a section of stat rows
+  function renderStatRows(defs, getStats) {
+    let rows = '';
+    const stats = cmpPlayers.map(p => getStats(p.name, p.team));
+    for (const def of defs) {
+      const vals = stats.map(s => s ? s[def.key] : null);
+      const numVals = vals.filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
+      const lowerBetter = def.key === 'era';
+      const bestVal = numVals.length > 1
+        ? (lowerBetter ? Math.min(...numVals.map(Number)) : Math.max(...numVals.map(Number)))
+        : null;
+      rows += `<div class="cmp-label-cell">${esc(def.label)}</div>`;
+      for (let i = 0; i < cols; i++) {
+        const v = vals[i];
+        const isBest = v !== null && v !== undefined && bestVal !== null && Number(v) === bestVal;
+        const cls = isBest ? 'cmp-val-cell best' : 'cmp-val-cell';
+        const display = v !== null && v !== undefined ? esc(def.fmt(v)) : '—';
+        rows += `<div class="${cls}">${display}</div>`;
+      }
+      for (let i = 0; i < emptySlots.length; i++) {
+        rows += `<div class="cmp-val-cell empty-col">—</div>`;
+      }
+    }
+    return rows;
+  }
+
+  if (hasHitters) {
+    // Section header for mixed comparisons
+    if (hasPitchers) {
+      html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Sisler Score</div>`;
+    }
+    const hasEG = EG.combined?.length > 0;
+    const hitterDefs = [
+      { label: 'Plate Appearances', key: 'pa',      fmt: v => v },
+      { label: 'Hitting Pts',       key: 'hitPts',  fmt: v => v.toFixed(2) },
+      { label: 'BR Pts',            key: 'brTotal', fmt: v => v.toFixed(2) },
+      { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2) },
+      { label: 'Max Possible Pts',  key: 'mx',      fmt: v => v.toFixed(2) },
+      { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%' },
+      ...(hasEG ? [{ label: 'Empty Game Rate', key: 'egPct', fmt: v => (v * 100).toFixed(1) + '%' }] : []),
+    ];
+    html += renderStatRows(hitterDefs, cmpGetHitterStats);
+  }
+
+  if (hasPitchers) {
+    if (hasHitters) {
+      html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Simple Game Score</div>`;
+    }
+    const pitcherDefs = [
+      { label: 'Game Starts', key: 'gs',    fmt: v => v },
+      { label: 'Avg SGS',     key: 'avg',   fmt: v => v.toFixed(2) },
+      { label: 'Best Start',  key: 'best',  fmt: v => v },
+      { label: 'Worst Start', key: 'worst', fmt: v => v },
+      { label: 'Total SGS',   key: 'total', fmt: v => v.toFixed(1) },
+      { label: 'ERA',         key: 'era',   fmt: v => v },
+    ];
+    html += renderStatRows(pitcherDefs, cmpGetPitcherStats);
+  }
+
+  body.innerHTML = html + '</div>';
+}
+
+// Close dropdown when clicking elsewhere
+document.addEventListener('click', e => {
+  const dd = document.getElementById('cmp-dropdown');
+  if (dd && !e.target.closest('.cmp-search-wrap')) dd.style.display = 'none';
+});
+
+// ════════════════════════════════════════════
+// SERIES STANDINGS — DATA STRUCTURES
+// ════════════════════════════════════════════
+
+// MLB team primary colors (BBRef abbreviations)
+const MLB_TEAM_COLORS = {
+  ARI:'#A71930', ATL:'#CE1141', BAL:'#DF4601', BOS:'#BD3039',
+  CHC:'#0E3386', CWS:'#27251F', CHW:'#27251F', CIN:'#C6011F',
+  CLE:'#00385D', CLG:'#00385D', COL:'#333366', DET:'#0C2340',
+  HOU:'#EB6E1F', KCR:'#004687', KC:'#004687',  LAA:'#003263',
+  LAD:'#005A9C', MIA:'#00A3E0', MIL:'#12284B', MIN:'#002B5C',
+  NYM:'#002D72', NYY:'#003087', OAK:'#003831', PHI:'#E81828',
+  PIT:'#FDB827', SDP:'#2F241D', SD:'#2F241D',  SFG:'#FD5A1E',
+  SF:'#FD5A1E',  SEA:'#0C2C56', STL:'#C41E3A', TBR:'#092C5C',
+  TB:'#092C5C',  TEX:'#003278', TOR:'#134A8E', WSN:'#AB0003',
+  WSH:'#AB0003',
+};
+
+// League / Division lookup
+const MLB_DIVISIONS_MAP = {
+  'AL East':    ['BAL','BOS','NYY','TBR','TB','TOR'],
+  'AL Central': ['CWS','CHW','CLE','CLG','DET','KCR','KC','MIN'],
+  'AL West':    ['HOU','LAA','OAK','SEA','TEX'],
+  'NL East':    ['ATL','MIA','NYM','PHI','WSN','WSH'],
+  'NL Central': ['CHC','CIN','MIL','PIT','STL'],
+  'NL West':    ['ARI','COL','LAD','SDP','SD','SFG','SF'],
+};
+const TEAM_DIVISION = {}, TEAM_LEAGUE = {};
+for (const [div, teams] of Object.entries(MLB_DIVISIONS_MAP)) {
+  const lg = div.startsWith('AL') ? 'AL' : 'NL';
+  for (const t of teams) { TEAM_DIVISION[t] = div; TEAM_LEAGUE[t] = lg; }
+}
+
+const SERIES = {
+  raw:    [],   // flat game records: {team,date,home,opp,result,r,ra,inn,wp,lp,sv}
+  teams:  {},   // teamAbbr → {games:[], series:[]}
+  loaded: false,
+};
+
+// UI state
+let seriesView      = 'table';
+let seriesTableSort = { col: 'serWinPct', dir: 'desc' };
+
+// ════════════════════════════════════════════
+// SERIES — CSV LOADING & PARSING
+// ════════════════════════════════════════════
+
+function loadSeriesFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    STORED_CSVS.series = text;
+    const rows = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    buildSeriesData(rows);
+    const st  = document.getElementById('seriesst');
+    const btn = document.getElementById('seriesbtn');
+    st.textContent = `✓ ${file.name} (${rows.length.toLocaleString()} rows)`;
+    st.className = 'upload-status ready';
+    btn.classList.add('loaded');
+    persistCSV('series', text);
+  };
+  reader.readAsText(file);
+}
+
+function buildSeriesData(rows) {
+  if (!rows.length) return;
+  const h = Object.keys(rows[0]);
+
+  // Column detection
+  const teamCol = findCol(h, 'Tm', 'Team', 'team', 'Club', 'TEAM');
+  const dateCol = findCol(h, 'Date', 'date', 'Gm Date', 'GameDate');
+  const oppCol  = findCol(h, 'Opp', 'opp', 'Opponent', 'OPP');
+  const resCol  = findCol(h, 'W/L', 'Result', 'result', 'WL', 'W_L');
+  const rCol    = findCol(h, 'R', 'Runs', 'RS', 'RunsScored');
+  const raCol   = findCol(h, 'RA', 'RunsAllowed', 'R.1', 'OppR');
+  const innCol  = findCol(h, 'Inn', 'Innings', 'inn', 'Inngs');
+  const winCol  = findCol(h, 'Win', 'WP', 'Winner', 'W Pitcher');
+  const lossCol = findCol(h, 'Loss', 'LP', 'Loser',  'L Pitcher');
+  const saveCol = findCol(h, 'Save', 'SV', 'Saver');
+
+  // Detect BBRef home/away column — unnamed column where values are '' or '@'
+  let atCol = findCol(h, 'H/A', 'HomeAway', 'Home_Away', 'HA');
+  if (!atCol) {
+    for (const col of h) {
+      if ([teamCol,dateCol,oppCol,resCol,rCol,raCol,innCol,winCol,lossCol,saveCol].includes(col)) continue;
+      const sample = rows.slice(0, Math.min(40, rows.length)).map(r => String(r[col]||'').trim());
+      if (sample.every(v => v==='' || v==='@')) { atCol = col; break; }
+    }
+  }
+
+  // Parse game records
+  SERIES.raw = rows.map(r => {
+    const res = String(r[resCol] || '').trim();
+    // Skip header rows, postponed games (no score)
+    if (!res || res === 'W/L' || res === 'Result') return null;
+    const rScore  = parseFloat(r[rCol]);
+    const raScore = parseFloat(r[raCol]);
+    if (isNaN(rScore) || isNaN(raScore)) return null;
+    const opp  = String(r[oppCol]  || '').trim().toUpperCase().replace(/^@/, '');
+    if (!opp) return null;
+    const team = teamCol ? String(r[teamCol] || '').trim().toUpperCase() : 'UNK';
+    const ha   = atCol ? String(r[atCol] || '').trim() : '';
+    return {
+      team,
+      date:   String(r[dateCol] || '').trim(),
+      home:   ha !== '@',
+      opp,
+      // W-wo = walkoff win, L-wo = walkoff loss → still W/L
+      result: res.startsWith('W') ? 'W' : res.startsWith('L') ? 'L' : 'T',
+      r:      rScore,
+      ra:     raScore,
+      inn:    parseInt(r[innCol] || '9') || 9,
+      wp:     winCol  ? String(r[winCol]  || '').trim() : '',
+      lp:     lossCol ? String(r[lossCol] || '').trim() : '',
+      sv:     saveCol ? String(r[saveCol] || '').trim() : '',
+    };
+  }).filter(Boolean);
+
+  // Group by team, sort by date, build series
+  SERIES.teams = {};
+  const byTeam = {};
+  for (const g of SERIES.raw) {
+    (byTeam[g.team] = byTeam[g.team] || []).push(g);
+  }
+  for (const [team, games] of Object.entries(byTeam)) {
+    games.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    SERIES.teams[team] = { games, series: buildTeamSeries(games) };
+  }
+
+  SERIES.loaded = true;
+  document.getElementById('series-cards').style.display = 'grid';
+  updateSeriesCards();
+  seriesRender();
+}
+
+// ════════════════════════════════════════════
+// SERIES — CORE CALCULATION UTILITIES
+// ════════════════════════════════════════════
+
+/**
+ * Groups consecutive games vs same opponent into series objects.
+ * A series = contiguous block of games where games[i].opp never changes.
+ * Doubleheaders count as separate games within the same series.
+ */
+function buildTeamSeries(games) {
+  const series = [];
+  let i = 0;
+  while (i < games.length) {
+    const opp = games[i].opp;
+    let j = i;
+    while (j < games.length && games[j].opp === opp) j++;
+    const sg    = games.slice(i, j);
+    const wins  = sg.filter(g => g.result === 'W').length;
+    const losses= sg.filter(g => g.result === 'L').length;
+    const ties  = sg.filter(g => g.result === 'T').length;
+    // Home series = majority of games at home (or first game if 50/50)
+    const homeCount = sg.filter(g => g.home).length;
+    const isHome = homeCount > sg.length / 2 || (homeCount === sg.length / 2 && sg[0].home);
+    series.push({
+      opp,
+      isHome,
+      games: sg,
+      wins, losses, ties,
+      // Series result: more wins = W, more losses = L, equal = T
+      result: wins > losses ? 'W' : losses > wins ? 'L' : 'T',
+      rf:        sg.reduce((s, g) => s + g.r,  0),
+      ra:        sg.reduce((s, g) => s + g.ra, 0),
+      startDate: sg[0].date,
+      endDate:   sg[sg.length - 1].date,
+      length:    sg.length,
+    });
+    i = j;
+  }
+  return series;
+}
+
+/** Aggregate series stats for the records table */
+function getSeriesAggregates() {
+  return Object.entries(SERIES.teams).map(([team, {games, series}]) => {
+    const gW = games.filter(g => g.result === 'W').length;
+    const gL = games.filter(g => g.result === 'L').length;
+    const sW = series.filter(s => s.result === 'W').length;
+    const sL = series.filter(s => s.result === 'L').length;
+    const sT = series.filter(s => s.result === 'T').length;
+    const home = series.filter(s =>  s.isHome);
+    const away = series.filter(s => !s.isHome);
+    return {
+      team,
+      gW, gL,
+      winPct:    (gW + gL) > 0 ? gW / (gW + gL) : 0,
+      sW, sL, sT,
+      serTotal:  series.length,
+      // Win% = series won / total series (ties count as half-win: optional — using raw W%)
+      serWinPct: series.length > 0 ? sW / series.length : 0,
+      homeW: home.filter(s => s.result === 'W').length,
+      homeL: home.filter(s => s.result === 'L').length,
+      homeT: home.filter(s => s.result === 'T').length,
+      awayW: away.filter(s => s.result === 'W').length,
+      awayL: away.filter(s => s.result === 'L').length,
+      awayT: away.filter(s => s.result === 'T').length,
+    };
+  });
+}
+
+// ════════════════════════════════════════════
+// SERIES — VIEW SWITCHING & RENDER DISPATCH
+// ════════════════════════════════════════════
+
+function seriesSetView(view) {
+  seriesView = view;
+  document.querySelectorAll('#series-view-tabs .view-tab').forEach((t, i) => {
+    t.classList.toggle('active',
+      (view === 'timeline'  && i === 0) ||
+      (view === 'table'     && i === 1) ||
+      (view === 'standings' && i === 2));
+  });
+  document.getElementById('series-pane-timeline').style.display  = view === 'timeline'  ? 'block' : 'none';
+  document.getElementById('series-pane-table').style.display     = view === 'table'     ? 'block' : 'none';
+  document.getElementById('series-pane-standings').style.display = view === 'standings' ? 'block' : 'none';
+  if (SERIES.loaded) seriesRender();
+}
+
+function seriesRender() {
+  if (!SERIES.loaded) return;
+  updateSeriesCards();
+  if (seriesView === 'timeline')  renderSeriesTimeline();
+  else if (seriesView === 'table') renderSeriesTable();
+  else if (seriesView === 'standings') renderSeriesStandings();
+}
+
+function updateSeriesCards() {
+  const agg = getSeriesAggregates();
+  if (!agg.length) return;
+  const teams  = agg.length;
+  const total  = agg.reduce((s, r) => s + r.serTotal, 0);
+  const avgPct = agg.reduce((s, r) => s + r.serWinPct, 0) / teams;
+  const top    = [...agg].sort((a, b) => b.serWinPct - a.serWinPct)[0];
+  document.getElementById('seriesc-teams').textContent   = teams;
+  document.getElementById('seriesc-series').textContent  = total;
+  document.getElementById('seriesc-avgpct').textContent  = (avgPct * 100).toFixed(1) + '%';
+  document.getElementById('seriesc-top').textContent     = (top.serWinPct * 100).toFixed(1) + '%';
+  document.getElementById('seriesc-top-name').textContent= top.team;
+}
+
+// ════════════════════════════════════════════
+// SERIES — TIMELINE RENDERER
+// ════════════════════════════════════════════
+
+function renderSeriesTimeline() {
+  const container = document.getElementById('series-timeline-body');
+  if (!SERIES.loaded || !Object.keys(SERIES.teams).length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">Upload a Team Game Log CSV to view the Series Timeline.</div>';
+    return;
+  }
+
+  const q        = normStr(document.getElementById('series-search').value);
+  const league   = document.getElementById('series-league').value;
+  const division = document.getElementById('series-division').value;
+  const outcome  = document.getElementById('series-outcome').value;
+  const ha       = document.getElementById('series-ha').value;
+  const lenFilter= document.getElementById('series-length').value;
+
+  let teams = Object.keys(SERIES.teams).sort((a, b) => {
+    // Sort by division, then team name
+    const da = TEAM_DIVISION[a] || 'ZZ', db = TEAM_DIVISION[b] || 'ZZ';
+    return da < db ? -1 : da > db ? 1 : a < b ? -1 : 1;
+  });
+
+  if (q)        teams = teams.filter(t => normStr(t).includes(q));
+  if (league)   teams = teams.filter(t => TEAM_LEAGUE[t] === league);
+  if (division) teams = teams.filter(t => TEAM_DIVISION[t] === division);
+
+  if (!teams.length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">No teams match current filters.</div>';
+    return;
+  }
+
+  const html = teams.map(team => {
+    const { series } = SERIES.teams[team];
+    const color = MLB_TEAM_COLORS[team] || '#4a5568';
+
+    // Summary dots — all series, dim those excluded by current filters
+    const dotsHtml = series.map((s, si) => {
+      const cls = s.result === 'W' ? 'win' : s.result === 'L' ? 'loss' : 'tie';
+      const excluded = seriesMatchesFilters(s, outcome, ha, lenFilter) === false;
+      const oppLabel = s.opp.slice(0, 3);
+      return `<div class="series-outcome-dot ${cls}"
+        style="${excluded ? 'opacity:0.22' : ''}"
+        title="vs ${s.opp} · ${s.wins}-${s.losses}${s.ties?'-'+s.ties:''}"
+        onmouseenter="showSeriesDotTooltip(event,${JSON.stringify(team)},${si})"
+        onmouseleave="hideSeriesToolTip()"
+        onclick="openSeriesModal(${JSON.stringify(team)},${si})">${esc(oppLabel)}</div>`;
+    }).join('');
+
+    // Series game blocks — apply filters
+    const blocksHtml = series.map((s, si) => {
+      if (!seriesMatchesFilters(s, outcome, ha, lenFilter)) return '';
+      const oppColor = MLB_TEAM_COLORS[s.opp] || '#4a5568';
+      const oppBadge = `<div class="series-opp-badge" style="background:${oppColor}">${esc(s.opp.slice(0, 3))}</div>`;
+      const boxes = s.games.map((g, gi) => {
+        const cls = ['game-box',
+          g.result === 'W' ? 'win' : g.result === 'L' ? 'loss' : 'tie',
+          g.home ? 'is-home' : 'is-away',
+          g.inn > 9 ? 'xi' : '',
+        ].filter(Boolean).join(' ');
+        return `<div class="${cls}"
+          onmouseenter="showGameTooltip(event,${JSON.stringify(team)},${si},${gi})"
+          onmouseleave="hideSeriesToolTip()"></div>`;
+      }).join('');
+      return `<div class="series-block"
+        onclick="hideSeriesToolTip();openSeriesModal(${JSON.stringify(team)},${si})"
+        title="vs ${esc(s.opp)} · ${s.wins}-${s.losses}${s.ties ? '-'+s.ties : ''}">
+        ${oppBadge}<div class="series-game-boxes">${boxes}</div>
+      </div>`;
+    }).join('');
+
+    const noMatch = !blocksHtml.trim();
+    const gbgId = `gbg-${team.replace(/[^a-zA-Z0-9]/g,'')}`;
+    return `<div class="series-team-row" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;align-items:stretch">
+        <div class="series-team-label">
+          <div class="series-team-badge" style="background:${color}">${esc(team)}</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div class="series-team-name">${esc(team)}</div>
+            <button class="template-link" style="font-size:9px;padding:1px 5px" onclick="event.stopPropagation();toggleGBG('${gbgId}', this)">&#9654; Game-by-Game</button>
+          </div>
+        </div>
+        <div class="series-dots-strip">${dotsHtml}</div>
+      </div>
+      <div id="${gbgId}" style="display:none;padding:6px 16px 8px 134px;border-top:1px solid var(--border);background:var(--surface2);overflow-x:auto">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+          ${noMatch
+            ? '<span style="color:var(--text2);font-size:11px">No series match filters</span>'
+            : blocksHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function toggleGBG(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '▶ Game-by-Game' : '▼ Game-by-Game';
+}
+
+/** Returns true if a series passes the active filters */
+function seriesMatchesFilters(s, outcome, ha, lenFilter) {
+  if (outcome && s.result !== outcome) return false;
+  if (ha === 'home' && !s.isHome) return false;
+  if (ha === 'away' &&  s.isHome) return false;
+  if (lenFilter) {
+    const min = parseInt(lenFilter);
+    if (min === 5 ? s.length < 5 : s.length !== min) return false;
+  }
+  return true;
+}
+
+// ════════════════════════════════════════════
+// SERIES — TABLE RENDERER
+// ════════════════════════════════════════════
+
+function renderSeriesTable() {
+  const q        = normStr(document.getElementById('series-search').value);
+  const league   = document.getElementById('series-league').value;
+  const division = document.getElementById('series-division').value;
+
+  let rows = getSeriesAggregates();
+  if (q)        rows = rows.filter(r => normStr(r.team).includes(q));
+  if (league)   rows = rows.filter(r => TEAM_LEAGUE[r.team] === league);
+  if (division) rows = rows.filter(r => TEAM_DIVISION[r.team] === division);
+  rows = sortData(rows, seriesTableSort.col, seriesTableSort.dir);
+
+  const body = document.getElementById('series-records-body');
+  if (!rows.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="11">No teams match current filters</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map((r, i) => {
+    const color = MLB_TEAM_COLORS[r.team] || '#4a5568';
+    const rdCls = r.serWinPct >= 0.5 ? 'c-green' : 'c-red';
+    return `<tr>
+      <td class="col-rank">${i + 1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:white;flex-shrink:0;text-shadow:0 1px 2px rgba(0,0,0,0.5)">${esc(r.team.slice(0,3))}</div>
+          ${esc(r.team)}
+        </div>
+      </td>
+      <td class="col-right">${r.gW}-${r.gL}</td>
+      <td class="col-right">${(r.winPct * 100).toFixed(1)}%</td>
+      <td class="col-right" style="font-weight:700">${r.sW}-${r.sL}-${r.sT}</td>
+      <td class="col-right ${rdCls}" style="font-weight:700">${(r.serWinPct * 100).toFixed(1)}%</td>
+      <td class="col-right c-green">${r.sW}</td>
+      <td class="col-right c-red">${r.sL}</td>
+      <td class="col-right" style="color:var(--text2)">${r.sT}</td>
+      <td class="col-right">${r.homeW}-${r.homeL}-${r.homeT}</td>
+      <td class="col-right">${r.awayW}-${r.awayL}-${r.awayT}</td>
+    </tr>`;
+  }).join('');
+
+  // Sync sort arrow indicators
+  document.querySelectorAll('#series-records-table th[data-col]').forEach(th => {
+    const col = th.getAttribute('data-col');
+    const active = col === seriesTableSort.col || (col === 'sW2' && seriesTableSort.col === 'sW');
+    th.classList.toggle('sort-asc',  active && seriesTableSort.dir === 'asc');
+    th.classList.toggle('sort-desc', active && seriesTableSort.dir === 'desc');
+  });
+}
+
+function seriesTableSortBy(col) {
+  seriesTableSort.dir = seriesTableSort.col === col && seriesTableSort.dir === 'desc' ? 'asc' : 'desc';
+  seriesTableSort.col = col;
+  renderSeriesTable();
+}
+
+// ════════════════════════════════════════════
+// SERIES — STANDINGS RENDERER
+// ════════════════════════════════════════════
+
+function renderSeriesStandings() {
+  const body = document.getElementById('series-standings-body');
+  if (!SERIES.loaded || !Object.keys(SERIES.teams).length) {
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">Upload a Team Game Log CSV to view Standings.</div>';
+    return;
+  }
+
+  const agg = getSeriesAggregates();
+  const aggByTeam = {};
+  for (const r of agg) aggByTeam[r.team] = r;
+
+  // Group by division
+  const divOrder = ['AL East','AL Central','AL West','NL East','NL Central','NL West'];
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:4px 0">';
+
+  for (const div of divOrder) {
+    const divTeams = Object.keys(SERIES.teams).filter(t => TEAM_DIVISION[t] === div);
+    if (!divTeams.length) continue;
+
+    const rows = divTeams.map(t => aggByTeam[t]).filter(Boolean)
+      .sort((a, b) => b.serWinPct - a.serWinPct);
+
+    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">${div}</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="font-size:10px;color:var(--text2)">
+          <th style="padding:5px 14px;text-align:left;font-weight:600">Team</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">Ser</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">W</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">L</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">T</th>
+          <th style="padding:5px 14px 5px 8px;text-align:right;font-weight:600">Ser W%</th>
+        </tr></thead>
+        <tbody>`;
+
+    for (const r of rows) {
+      const color  = MLB_TEAM_COLORS[r.team] || '#4a5568';
+      const rdCls  = r.serWinPct >= 0.5 ? 'color:var(--green)' : 'color:var(--accent)';
+      html += `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:7px 14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:20px;height:20px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5);flex-shrink:0">${esc(r.team.slice(0,3))}</div>
+            <span style="font-size:12px;font-weight:600">${esc(r.team)}</span>
+          </div>
+        </td>
+        <td style="padding:7px 8px;text-align:right;font-size:12px;color:var(--text2)">${r.serTotal}</td>
+        <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;color:var(--green)">${r.sW}</td>
+        <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;color:var(--accent)">${r.sL}</td>
+        <td style="padding:7px 8px;text-align:right;font-size:12px;color:var(--text2)">${r.sT}</td>
+        <td style="padding:7px 14px 7px 8px;text-align:right;font-size:13px;font-weight:700;${rdCls}">${(r.serWinPct*100).toFixed(1)}%</td>
+      </tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+// ════════════════════════════════════════════
+// SERIES — TOOLTIP
+// ════════════════════════════════════════════
+
+function positionTT(e) {
+  const tt = document.getElementById('series-tooltip');
+  if (!tt || tt.style.display !== 'block') return;
+  const w = tt.offsetWidth || 220, h = tt.offsetHeight || 180;
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + w > window.innerWidth  - 8) x = e.clientX - w - 8;
+  if (y + h > window.innerHeight - 8) y = e.clientY - h - 8;
+  tt.style.left = x + 'px'; tt.style.top = y + 'px';
+}
+document.addEventListener('mousemove', positionTT);
+
+function hideSeriesToolTip() {
+  const tt = document.getElementById('series-tooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+function showTT(e, html) {
+  const tt = document.getElementById('series-tooltip');
+  tt.innerHTML = html; tt.style.display = 'block';
+  positionTT(e);
+}
+
+/** Hover: individual game box */
+function showGameTooltip(e, team, si, gi) {
+  const s = SERIES.teams[team]?.series[si];
+  if (!s) return;
+  const g = s.games[gi];
+  const gNum = gi + 1;
+  // Running series score up through this game
+  let cumW = 0, cumL = 0;
+  for (let k = 0; k <= gi; k++) {
+    if (s.games[k].result === 'W') cumW++; else if (s.games[k].result === 'L') cumL++;
+  }
+  const isLast = gi === s.games.length - 1;
+  let statusText, sc;
+  if (isLast) {
+    statusText = s.result === 'W' ? `Won series ${s.wins}-${s.losses}` :
+                 s.result === 'L' ? `Lost series ${s.wins}-${s.losses}` :
+                                    `Series split ${s.wins}-${s.losses}`;
+    sc = s.result === 'W' ? 'win' : s.result === 'L' ? 'loss' : 'tie';
+  } else {
+    statusText = cumW === cumL ? `Series tied ${cumW}-${cumL}` :
+                 cumW > cumL  ? `Lead ${cumW}-${cumL}` :
+                                `Trail ${cumW}-${cumL}`;
+    sc = cumW === cumL ? 'tie' : cumW > cumL ? 'win' : 'loss';
+  }
+  const xiNote = g.inn > 9 ? ` · ${g.inn} innings` : '';
+  const haStr  = g.home ? 'Home' : 'Away';
+  const score  = `${g.r}–${g.ra}${xiNote}`;
+
+  let html = `<div class="tt-head">Game ${gNum}/${s.games.length} · vs ${esc(s.opp)}</div>`;
+  html += `<div class="tt-row"><span class="tt-label">Date</span><span class="tt-val">${esc(g.date)}</span></div>`;
+  html += `<div class="tt-row"><span class="tt-label">Result</span><span class="tt-val">${g.result === 'W' ? 'W' : 'L'} ${score}</span></div>`;
+  html += `<div class="tt-row"><span class="tt-label">Location</span><span class="tt-val">${haStr}</span></div>`;
+  if (g.wp)  html += `<div class="tt-row"><span class="tt-label">Win</span><span class="tt-val">${esc(g.wp)}</span></div>`;
+  if (g.lp)  html += `<div class="tt-row"><span class="tt-label">Loss</span><span class="tt-val">${esc(g.lp)}</span></div>`;
+  if (g.sv)  html += `<div class="tt-row"><span class="tt-label">Save</span><span class="tt-val">${esc(g.sv)}</span></div>`;
+  html += `<div class="tt-status ${sc}">${esc(statusText)}</div>`;
+  showTT(e, html);
+}
+
+/** Hover: series outcome dot (summary strip) */
+function showSeriesDotTooltip(e, team, si) {
+  const s = SERIES.teams[team]?.series[si];
+  if (!s) return;
+  const res = s.result === 'W' ? 'Series Win' : s.result === 'L' ? 'Series Loss' : 'Series Split';
+  const sc  = s.result === 'W' ? 'win' : s.result === 'L' ? 'loss' : 'tie';
+  const rd  = s.rf - s.ra;
+  let html  = `<div class="tt-head">vs ${esc(s.opp)}</div>`;
+  html += `<div class="tt-row"><span class="tt-label">Dates</span><span class="tt-val">${esc(s.startDate)}${s.endDate !== s.startDate ? ' – ' + esc(s.endDate) : ''}</span></div>`;
+  html += `<div class="tt-row"><span class="tt-label">Record</span><span class="tt-val">${s.wins}-${s.losses}${s.ties ? '-'+s.ties : ''}</span></div>`;
+  html += `<div class="tt-row"><span class="tt-label">Runs</span><span class="tt-val">${s.rf}–${s.ra} (${rd > 0 ? '+' : ''}${rd})</span></div>`;
+  html += `<div class="tt-row"><span class="tt-label">Location</span><span class="tt-val">${s.isHome ? 'Home' : 'Away'}</span></div>`;
+  html += `<div class="tt-status ${sc}">${esc(res)}</div>`;
+  showTT(e, html);
+}
+
+// ════════════════════════════════════════════
+// SERIES — DETAIL MODAL
+// ════════════════════════════════════════════
+
+function openSeriesModal(team, si) {
+  const s = SERIES.teams[team]?.series[si];
+  if (!s) return;
+  const haStr  = s.isHome ? 'Home' : 'Away';
+  const resStr = s.result === 'W' ? 'Won' : s.result === 'L' ? 'Lost' : 'Split';
+  const recStr = `${s.wins}-${s.losses}${s.ties ? '-' + s.ties : ''}`;
+  document.getElementById('series-modal-title').textContent =
+    `${team} vs ${s.opp}`;
+  document.getElementById('series-modal-meta').textContent =
+    `${haStr} · ${resStr} ${recStr} · ${s.startDate}${s.endDate !== s.startDate ? ' – ' + s.endDate : ''}`;
+
+  const rd = s.rf - s.ra;
+  document.getElementById('sm-series-rf').textContent = s.rf;
+  document.getElementById('sm-series-ra').textContent = s.ra;
+  const rdEl = document.getElementById('sm-series-rd');
+  rdEl.textContent = (rd > 0 ? '+' : '') + rd;
+  rdEl.style.color = rd > 0 ? 'var(--green)' : rd < 0 ? 'var(--accent)' : 'var(--text)';
+
+  let cumW = 0, cumL = 0;
+  document.getElementById('series-modal-body').innerHTML = s.games.map((g, i) => {
+    if (g.result === 'W') cumW++; else if (g.result === 'L') cumL++;
+    const rcls    = g.result === 'W' ? 'c-green' : g.result === 'L' ? 'c-red' : '';
+    const xiStr   = g.inn > 9 ? ` (${g.inn}i)` : '';
+    const scoreStr= `${g.r}-${g.ra}`;
+    const serStatus = cumW > cumL ? `Lead ${cumW}-${cumL}` :
+                      cumL > cumW ? `Trail ${cumW}-${cumL}` :
+                                    `Tied ${cumW}-${cumL}`;
+    const isLast  = i === s.games.length - 1;
+    const finalStatus = isLast
+      ? (s.result === 'W' ? `Won ${recStr}` : s.result === 'L' ? `Lost ${recStr}` : `Split ${recStr}`)
+      : serStatus;
+    return `<tr>
+      <td style="text-align:center;color:var(--text2)">${i + 1}</td>
+      <td>${esc(g.date)}</td>
+      <td style="text-align:center;color:var(--text2)">${g.home ? 'H' : '@'}</td>
+      <td class="${rcls}" style="text-align:center;font-weight:700">${g.result}${xiStr}</td>
+      <td class="${rcls}" style="text-align:right;font-variant-numeric:tabular-nums">${scoreStr}</td>
+      <td style="text-align:center;color:var(--text2)">${g.inn > 9 ? g.inn : ''}</td>
+      <td style="font-size:11px">${esc(g.wp)}</td>
+      <td style="font-size:11px">${esc(g.lp)}</td>
+      <td style="font-size:11px">${esc(g.sv)}</td>
+      <td style="text-align:right;font-size:11px;color:var(--text2)">${esc(finalStatus)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('series-modal').classList.add('open');
+}
+
+function closeSeriesModal() {
+  document.getElementById('series-modal').classList.remove('open');
+}
+function seriesModalBgClick(e) {
+  if (e.target === document.getElementById('series-modal')) closeSeriesModal();
+}
+
+// ════════════════════════════════════════════
+// SERIES — CSV EXPORT
+// ════════════════════════════════════════════
+
+function downloadSeriesCSV() {
+  if (!SERIES.loaded || !Object.keys(SERIES.teams).length) {
+    alert('No series data loaded.');
+    return;
+  }
+  const rows = getSeriesAggregates();
+  downloadCSV(rows.map(r => ({
+    Team:         r.team,
+    League:       TEAM_LEAGUE[r.team]    || '',
+    Division:     TEAM_DIVISION[r.team]  || '',
+    Record:       `${r.gW}-${r.gL}`,
+    WinPct:       (r.winPct * 100).toFixed(1) + '%',
+    SeriesRecord: `${r.sW}-${r.sL}-${r.sT}`,
+    SeriesWinPct: (r.serWinPct * 100).toFixed(1) + '%',
+    SeriesWins:   r.sW,
+    SeriesLosses: r.sL,
+    SeriesTies:   r.sT,
+    TotalSeries:  r.serTotal,
+    HomeRecord:   `${r.homeW}-${r.homeL}-${r.homeT}`,
+    AwayRecord:   `${r.awayW}-${r.awayL}-${r.awayT}`,
+  })), 'series-standings.csv');
+}
+</script>
+</body>
+</html>
