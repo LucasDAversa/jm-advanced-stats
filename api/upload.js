@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const blob = await put(`csvs/${key}.csv`, content, {
-      access: 'public',
+      access: 'private',
       contentType: 'text/csv',
       addRandomSuffix: false,
     });
