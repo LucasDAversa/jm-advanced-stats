@@ -624,12 +624,13 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 }
 .cmp-val-cell {
   padding: 8px 14px;
-  text-align: right;
+  text-align: center;
   font-variant-numeric: tabular-nums;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid rgba(48,54,61,0.5);
 }
 .cmp-val-cell.best { color: var(--green); font-weight: 700; }
+.cmp-val-cell.worst { color: var(--accent); font-weight: 700; }
 .cmp-val-cell.empty-col { background: rgba(255,255,255,0.015); }
 .cmp-empty-state {
   padding: 40px;
@@ -1833,14 +1834,14 @@ function loadEGFile(event, which) {
     const fixed = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
     if (which === 'total') {
       EG.total = fixed;
-      document.getElementById('egst-total').textContent = `✓ ${file.name} (${fixed.length} rows)`;
-      document.getElementById('egst-total').className = 'upload-status ready';
-      document.getElementById('egbtn-total').classList.add('loaded');
+      safeText('egst-total', `✓ ${file.name} (${fixed.length} rows)`);
+      safeCls('egst-total', 'upload-status ready');
+      safeAdd('egbtn-total', 'loaded');
     } else {
       EG.empty = fixed;
-      document.getElementById('egst-empty').textContent = `✓ ${file.name} (${fixed.length} rows)`;
-      document.getElementById('egst-empty').className = 'upload-status ready';
-      document.getElementById('egbtn-empty').classList.add('loaded');
+      safeText('egst-empty', `✓ ${file.name} (${fixed.length} rows)`);
+      safeCls('egst-empty', 'upload-status ready');
+      safeAdd('egbtn-empty', 'loaded');
     }
     if (EG.total && EG.empty) egMerge();
     persistCSV(which === 'total' ? 'eg-total' : 'eg-empty', text);
@@ -2065,9 +2066,9 @@ function loadSGSFile(event) {
     STORED_CSVS.sgs = text;
     const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
     sgsBuildData(data);
-    document.getElementById('sgsst').textContent = `✓ ${file.name} (${data.length} rows)`;
-    document.getElementById('sgsst').className = 'upload-status ready';
-    document.getElementById('sgsbtn').classList.add('loaded');
+    safeText('sgsst', `✓ ${file.name} (${data.length} rows)`);
+    safeCls('sgsst', 'upload-status ready');
+    safeAdd('sgsbtn', 'loaded');
     persistCSV('sgs', text);
     adminRefreshStatus();
   });
@@ -2501,14 +2502,14 @@ let sislerModalBRByDate = {};   // date → total BR pts for the modal player
 function loadSislerFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  document.getElementById('sislerst').textContent = 'Parsing…';
+  safeText('sislerst', 'Parsing…');
   file.text().then(text => {
     STORED_CSVS.sislerPa = text;
     const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
     sislerBuild(data);
-    document.getElementById('sislerst').textContent = `✓ ${file.name} (${data.length.toLocaleString()} rows)`;
-    document.getElementById('sislerst').className = 'upload-status ready';
-    document.getElementById('sislerbtn').classList.add('loaded');
+    safeText('sislerst', `✓ ${file.name} (${data.length.toLocaleString()} rows)`);
+    safeCls('sislerst', 'upload-status ready');
+    safeAdd('sislerbtn', 'loaded');
     persistCSV('sisler-pa', text);
     adminRefreshStatus();
   });
@@ -3117,9 +3118,9 @@ function loadSBFile(event) {
   file.text().then(text => {
     STORED_CSVS.sislerSb = text;
     buildBRFromSB(fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data));
-    document.getElementById('sbst').textContent = `✓ ${file.name}`;
-    document.getElementById('sbst').className = 'upload-status ready';
-    document.getElementById('sbbtn').classList.add('loaded');
+    safeText('sbst', `✓ ${file.name}`);
+    safeCls('sbst', 'upload-status ready');
+    safeAdd('sbbtn', 'loaded');
     sislerUpdateSBNotice();
     if (SISLER.raw.length) sislerRender();
     persistCSV('sisler-sb', text);
@@ -3586,6 +3587,12 @@ async function uploadToServer(key, text) {
     body: JSON.stringify({ key, content, encoding }),
   });
 }
+
+// Safe element updaters — used by CSV load functions since the per-tab upload sections
+// were removed; some status elements may not be present in all contexts.
+function safeText(id, val) { const e=document.getElementById(id); if(e) e.textContent=val; }
+function safeCls(id, cls)  { const e=document.getElementById(id); if(e) e.className=cls; }
+function safeAdd(id, cls)  { const e=document.getElementById(id); if(e) e.classList.add(cls); }
 
 async function persistCSV(key, text) {
   try { await uploadToServer(key, text); } catch (_) { /* local / offline */ }
@@ -4114,13 +4121,17 @@ function cmpRender() {
       const bestVal = numVals.length > 1
         ? (lowerBetter ? Math.min(...numVals.map(Number)) : Math.max(...numVals.map(Number)))
         : null;
+      const worstVal = numVals.length > 1
+        ? (lowerBetter ? Math.max(...numVals.map(Number)) : Math.min(...numVals.map(Number)))
+        : null;
       const boldStyle = def.bold ? 'font-weight:700;' : '';
       const labelStyle = def.bold ? 'font-weight:700;color:var(--text1)' : '';
       rows += `<div class="cmp-label-cell" style="${labelStyle}">${esc(def.label)}</div>`;
       for (let i = 0; i < cols; i++) {
         const v = vals[i];
-        const isBest = v !== null && v !== undefined && bestVal !== null && Number(v) === bestVal;
-        const cls = isBest ? 'cmp-val-cell best' : 'cmp-val-cell';
+        const isBest  = v !== null && v !== undefined && bestVal  !== null && Number(v) === bestVal;
+        const isWorst = !isBest && v !== null && v !== undefined && worstVal !== null && Number(v) === worstVal;
+        const cls = isBest ? 'cmp-val-cell best' : isWorst ? 'cmp-val-cell worst' : 'cmp-val-cell';
         const display = v !== null && v !== undefined ? esc(def.fmt(v)) : '—';
         rows += `<div class="${cls}" style="${boldStyle}">${display}</div>`;
       }
@@ -4194,7 +4205,7 @@ const MLB_TEAM_COLORS = {
   CLE:'#00385D', CLG:'#00385D', COL:'#333366', DET:'#0C2340',
   HOU:'#EB6E1F', KCR:'#004687', KC:'#004687',  LAA:'#003263',
   LAD:'#005A9C', MIA:'#00A3E0', MIL:'#12284B', MIN:'#002B5C',
-  NYM:'#002D72', NYY:'#003087', OAK:'#003831', PHI:'#E81828',
+  NYM:'#002D72', NYY:'#003087', OAK:'#003831', ATH:'#003831', PHI:'#E81828',
   PIT:'#FDB827', SDP:'#2F241D', SD:'#2F241D',  SFG:'#FD5A1E',
   SF:'#FD5A1E',  SEA:'#0C2C56', STL:'#C41E3A', TBR:'#092C5C',
   TB:'#092C5C',  TEX:'#003278', TOR:'#134A8E', WSN:'#AB0003',
@@ -4205,7 +4216,7 @@ const MLB_TEAM_COLORS = {
 const MLB_DIVISIONS_MAP = {
   'AL East':    ['BAL','BOS','NYY','TBR','TB','TOR'],
   'AL Central': ['CWS','CHW','CLE','CLG','DET','KCR','KC','MIN'],
-  'AL West':    ['HOU','LAA','OAK','SEA','TEX'],
+  'AL West':    ['HOU','LAA','OAK','ATH','SEA','TEX'],
   'NL East':    ['ATL','MIA','NYM','PHI','WSN','WSH'],
   'NL Central': ['CHC','CIN','MIL','PIT','STL'],
   'NL West':    ['ARI','COL','LAD','SDP','SD','SFG','SF'],
@@ -4239,11 +4250,9 @@ function loadSeriesFile(event) {
     STORED_CSVS.series = text;
     const rows = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
     buildSeriesData(rows);
-    const st  = document.getElementById('seriesst');
-    const btn = document.getElementById('seriesbtn');
-    st.textContent = `✓ ${file.name} (${rows.length.toLocaleString()} rows)`;
-    st.className = 'upload-status ready';
-    btn.classList.add('loaded');
+    safeText('seriesst', `✓ ${file.name} (${rows.length.toLocaleString()} rows)`);
+    safeCls('seriesst', 'upload-status ready');
+    safeAdd('seriesbtn', 'loaded');
     persistCSV('series', text);
     adminRefreshStatus();
   };
@@ -4628,6 +4637,10 @@ function renderSeriesStandings() {
     return;
   }
 
+  const q        = normStr(document.getElementById('series-search').value);
+  const league   = document.getElementById('series-league').value;
+  const division = document.getElementById('series-division').value;
+
   const agg = getSeriesAggregates();
   const aggByTeam = {};
   for (const r of agg) aggByTeam[r.team] = r;
@@ -4637,7 +4650,13 @@ function renderSeriesStandings() {
   let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:4px 0">';
 
   for (const div of divOrder) {
-    const divTeams = Object.keys(SERIES.teams).filter(t => TEAM_DIVISION[t] === div);
+    // Skip divisions not matching division/league filter
+    if (division && div !== division) continue;
+    if (league && !div.startsWith(league)) continue;
+
+    let divTeams = Object.keys(SERIES.teams).filter(t => TEAM_DIVISION[t] === div);
+    // Apply team search filter
+    if (q) divTeams = divTeams.filter(t => normStr(t).includes(q));
     if (!divTeams.length) continue;
 
     const rows = divTeams.map(t => aggByTeam[t]).filter(Boolean)
