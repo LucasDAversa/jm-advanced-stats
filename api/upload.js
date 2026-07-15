@@ -1,10 +1,8 @@
-import { put } from '@vercel/blob';
-
-export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
+const { put } = require('@vercel/blob');
 
 const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series'];
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
@@ -20,4 +18,6 @@ export default async function handler(req, res) {
   });
 
   res.status(200).json({ url: blob.url });
-}
+};
+
+module.exports.config = { api: { bodyParser: { sizeLimit: '10mb' } } };
