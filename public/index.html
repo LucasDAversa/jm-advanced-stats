@@ -3807,10 +3807,12 @@ function cmpGetHitterStats(name, team) {
   const mx      = rows.reduce((s, r) => s + (r.max_pts || 0), 0);
   const score   = hitPts + brTotal;
   const prod    = mx > 0 ? score / mx * 100 : 0;
-  // Empty Games rate
-  const egRow = (EG.combined || []).find(r => r.player === name && r.team === team);
-  const egPct = egRow ? egRow.pct : null;
-  return { pa, hitPts, brTotal, score, mx, prod, egPct };
+  // Empty Games
+  const egRow      = (EG.combined || []).find(r => r.player === name && r.team === team);
+  const egPct      = egRow ? egRow.pct      : null;
+  const totalGames = egRow ? egRow.total     : null;
+  const emptyGames = egRow ? egRow.empty     : null;
+  return { pa, hitPts, brTotal, score, mx, prod, egPct, totalGames, emptyGames };
 }
 
 // Get SGS (pitcher) stats for one player
@@ -3884,17 +3886,19 @@ function cmpRender() {
     for (const def of defs) {
       const vals = stats.map(s => s ? s[def.key] : null);
       const numVals = vals.filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
-      const lowerBetter = def.key === 'era';
+      const lowerBetter = def.key === 'era' || def.lowerBetter === true;
       const bestVal = numVals.length > 1
         ? (lowerBetter ? Math.min(...numVals.map(Number)) : Math.max(...numVals.map(Number)))
         : null;
-      rows += `<div class="cmp-label-cell">${esc(def.label)}</div>`;
+      const boldStyle = def.bold ? 'font-weight:700;' : '';
+      const labelStyle = def.bold ? 'font-weight:700;color:var(--text1)' : '';
+      rows += `<div class="cmp-label-cell" style="${labelStyle}">${esc(def.label)}</div>`;
       for (let i = 0; i < cols; i++) {
         const v = vals[i];
         const isBest = v !== null && v !== undefined && bestVal !== null && Number(v) === bestVal;
         const cls = isBest ? 'cmp-val-cell best' : 'cmp-val-cell';
         const display = v !== null && v !== undefined ? esc(def.fmt(v)) : '—';
-        rows += `<div class="${cls}">${display}</div>`;
+        rows += `<div class="${cls}" style="${boldStyle}">${display}</div>`;
       }
       for (let i = 0; i < emptySlots.length; i++) {
         rows += `<div class="cmp-val-cell empty-col">—</div>`;
@@ -3913,10 +3917,14 @@ function cmpRender() {
       { label: 'Plate Appearances', key: 'pa',      fmt: v => v },
       { label: 'Hitting Pts',       key: 'hitPts',  fmt: v => v.toFixed(2) },
       { label: 'BR Pts',            key: 'brTotal', fmt: v => v.toFixed(2) },
-      { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2) },
+      { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2), bold: true },
       { label: 'Max Possible Pts',  key: 'mx',      fmt: v => v.toFixed(2) },
-      { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%' },
-      ...(hasEG ? [{ label: 'Empty Game Rate', key: 'egPct', fmt: v => (v * 100).toFixed(1) + '%' }] : []),
+      { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%', bold: true },
+      ...(hasEG ? [
+        { label: 'Total Games',    key: 'totalGames', fmt: v => v },
+        { label: 'Empty Games',    key: 'emptyGames', fmt: v => v },
+        { label: 'Empty Game Rate', key: 'egPct',     fmt: v => (v * 100).toFixed(1) + '%', bold: true, lowerBetter: true },
+      ] : []),
     ];
     html += renderStatRows(hitterDefs, cmpGetHitterStats);
   }
