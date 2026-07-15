@@ -6,10 +6,12 @@ module.exports = async function handler(req, res) {
 
   const { blobs } = await list({ prefix: 'csvs/' });
 
+  // Return proxy URLs (/api/csv?key=...) instead of direct blob URLs.
+  // Direct blob URLs require auth because the store is private.
   const result = {};
   for (const b of blobs) {
     const key = b.pathname.replace('csvs/', '').replace('.csv', '');
-    result[key] = b.url;
+    result[key] = `/api/csv?key=${encodeURIComponent(key)}`;
   }
 
   res.status(200).json(result);
