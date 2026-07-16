@@ -3,7 +3,7 @@ const zlib = require('zlib');
 const { promisify } = require('util');
 const gunzip = promisify(zlib.gunzip);
 
-const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series'];
+const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series', 'stats-batting', 'stats-pitching'];
 
 // Disable Vercel's default body parser so we can handle large files ourselves
 module.exports.config = { api: { bodyParser: false } };
