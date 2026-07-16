@@ -319,6 +319,11 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 .c-yellow { color: var(--yellow); }
 .c-red    { color: var(--accent); }
 
+/* Standard Stats percentile tiers */
+.std-leader { color: #60a5fa; font-weight: 700; }
+.std-top    { color: var(--green); }
+.std-bot    { color: var(--accent); }
+
 /* EG% coloring */
 .eg-low  { color: var(--green); }
 .eg-mid  { color: var(--yellow); }
@@ -1352,6 +1357,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 
     <!-- Batting table -->
     <div id="stats-pane-batting">
+      <div id="stats-batting-legend"></div>
       <div class="table-wrap">
         <table id="stats-batting-table">
           <thead id="stats-batting-head">
@@ -1390,6 +1396,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 
     <!-- Pitching table -->
     <div id="stats-pane-pitching" style="display:none">
+      <div id="stats-pitching-legend"></div>
       <div class="table-wrap">
         <table id="stats-pitching-table">
           <thead id="stats-pitching-head">
@@ -2677,6 +2684,17 @@ function sNormEvent(raw) {
   return e;
 }
 
+// Override the event code using play description cues.
+// WP/PB/Balk → all runners credited fully (nBase=0).
+// Sac Fly/Bunt in description overrides a generic "Out" event.
+function getEffectiveEvent(event, desc) {
+  const d = String(desc || '');
+  if (/wild\s+pitch|\(WP\)|passed\s+ball|\(PB\)|\bbalk\b/i.test(d)) return 'WP';
+  if (/\bsac(rifice)?\s+fly\b/i.test(d))             return 'SF';
+  if (/\bsac(rifice)?\s+(bunt|hit)\b/i.test(d))       return 'SH';
+  return event;
+}
+
 
 // ════════════════════════════════════════════
 // SISLER STAT — STATE & DATA
@@ -2730,7 +2748,9 @@ function sislerBuild(raw) {
   const posCol  = findCol(h, 'Pos','Position','position');
 
   SISLER.raw = raw.map(r => {
-    const ev  = sNormEvent(r[evCol]);
+    const rawEv = sNormEvent(r[evCol]);
+    const paDesc = descCol ? String(r[descCol] || '') : '';
+    const ev  = getEffectiveEvent(rawEv, paDesc);
     const rob = String(r[robCol] || '---').trim().padEnd(3, '-').slice(0, 3);
     const pa  = sCalcPA(ev, rob);
     const opp = String(r[oppCol] || '').trim().replace(/^@/, '');
@@ -3184,13 +3204,18 @@ function parseRunnerMoves(desc) {
   return moves;
 }
 
-// Baserunning credit: every base the runner advances
+// Baserunning credit: only the bases the runner earned beyond what the batter forced.
 // S_BASE = [0.5, 1.0, 1.5] for 1st→2nd, 2nd→3rd, 3rd→home
-// Both the runner AND the hitter get credit independently.
-function calcRunnerBRPts(startBase, endBase) {
-  if (endBase <= startBase) return 0;
+// forced = sBasesResp(event) → the number of bases the batter's event "covers" for the runner.
+// Any advancement within those forced bases earns 0 credit; only extras count.
+// e.g. runner on 1st, batter singles (forced=1), runner goes to 3rd:
+//   forced covers 1st→2nd, credit starts at 2nd→3rd = 1.0 pt
+function calcRunnerBRPts(startBase, endBase, event) {
+  if (endBase <= startBase || endBase < 0) return 0;
+  const forced     = sBasesResp(event || '');
+  const extraStart = Math.min(startBase + forced, endBase);
   let pts = 0;
-  for (let i = startBase; i < endBase && i < 3; i++) pts += S_BASE[i];
+  for (let i = extraStart; i < endBase && i < 3; i++) pts += S_BASE[i];
   return pts;
 }
 
@@ -3216,9 +3241,10 @@ function buildBRFromRaw(raw, { batCol, tmCol, evCol, innCol, descCol, dateCol })
 
     const rawTm    = String(r[tmCol] || '').trim();
     const team     = rawTm.length > 3 ? 'Multi' : rawTm;
-    const event    = sNormEvent(String(r[evCol] || '').trim());
-    const desc     = String(r[descCol] || '').trim();
-    const abbrev   = abbrevName(fullName);
+    const event         = sNormEvent(String(r[evCol] || '').trim());
+    const desc          = String(r[descCol] || '').trim();
+    const effectiveEvent = getEffectiveEvent(event, desc);
+    const abbrev        = abbrevName(fullName);
     const batNorm  = normStr(abbrev);
     const teamNorm = normStr(team);
 
@@ -3253,7 +3279,7 @@ function buildBRFromRaw(raw, { batCol, tmCol, evCol, innCol, descCol, dateCol })
 
       const endBase = move.destination;
       if (endBase > entry.base) {
-        const brPts = calcRunnerBRPts(entry.base, endBase);
+        const brPts = calcRunnerBRPts(entry.base, endBase, effectiveEvent);
         if (brPts > 0) {
           _recordsPushed++;
           SISLER.brRecords.push({
@@ -4724,6 +4750,66 @@ function statsNumSort(a, b, col, dir) {
   return dir === 'desc' ? vb - va : va - vb;
 }
 
+// ── Standard Stats percentile coloring ─────────────────────────────────────
+const BATTING_STAT_COLS = {
+  WAR:    { lb: false },
+  HR:     { lb: false },
+  RBI:    { lb: false },
+  SB:     { lb: false },
+  BB:     { lb: false },
+  BA:     { lb: false },
+  OBP:    { lb: false },
+  SLG:    { lb: false },
+  OPS:    { lb: false },
+  'OPS+': { lb: false },
+};
+
+const PITCHING_STAT_COLS = {
+  WAR:    { lb: false },
+  W:      { lb: false },
+  L:      { lb: true  },
+  ERA:    { lb: true  },
+  SO:     { lb: false },
+  H:      { lb: true  },
+  HR:     { lb: true  },
+  BB:     { lb: true  },
+  WHIP:   { lb: true  },
+  'ERA+': { lb: false },
+  FIP:    { lb: true  },
+};
+
+const STD_LEGEND_HTML = `<div style="display:flex;gap:20px;padding:6px 2px 8px;font-size:11px;color:var(--text2);align-items:center;border-bottom:1px solid var(--border);margin-bottom:2px"><span style="font-weight:600;letter-spacing:0.3px">Color key:</span><span><span style="color:#60a5fa;font-weight:700">■</span> League Leader</span><span><span style="color:var(--green)">■</span> Top 25%</span><span><span style="color:var(--text1)">■</span> Middle 50%</span><span><span style="color:var(--accent)">■</span> Bottom 25%</span></div>`;
+
+function computeStdColMap(rows, colDefs) {
+  const map = {};
+  for (const [col, { lb }] of Object.entries(colDefs)) {
+    const vals = rows.map(r => parseFloat(r[col])).filter(v => !isNaN(v) && isFinite(v));
+    if (vals.length < 4) { map[col] = null; continue; }
+    const sorted = [...vals].sort((a, b) => a - b);
+    const p25 = sorted[Math.floor(sorted.length * 0.25)];
+    const p75 = sorted[Math.floor(sorted.length * 0.75)];
+    const leader = lb ? sorted[0] : sorted[sorted.length - 1];
+    map[col] = { p25, p75, leader, lb };
+  }
+  return map;
+}
+
+function stdCls(rawVal, col, colMap) {
+  const cs = colMap[col];
+  if (!cs) return '';
+  const v = parseFloat(rawVal);
+  if (isNaN(v) || !isFinite(v)) return '';
+  if (v === cs.leader) return 'std-leader';
+  if (cs.lb) {
+    if (v <= cs.p25) return 'std-top';
+    if (v >= cs.p75) return 'std-bot';
+  } else {
+    if (v >= cs.p75) return 'std-top';
+    if (v <= cs.p25) return 'std-bot';
+  }
+  return '';
+}
+
 function statsRenderBatting() {
   const body = document.getElementById('stats-batting-body');
   if (!STATS.batting.length) {
@@ -4770,18 +4856,20 @@ function statsRenderBatting() {
   // Update team filter options
   populateTeamFilter('stats-team', [...new Set(STATS.batting.map(r => r.Team).filter(Boolean))].sort());
 
+  // Percentile color map + legend
+  const colMap = computeStdColMap(rows, BATTING_STAT_COLS);
+  const legendEl = document.getElementById('stats-batting-legend');
+  if (legendEl) legendEl.innerHTML = STD_LEGEND_HTML;
+
   body.innerHTML = rows.map((r, i) => {
-    const ba  = parseFloat(r.BA)  || 0;
-    const ops = parseFloat(r.OPS) || 0;
-    const baCls  = ba  >= .300 ? 'c-green' : ba  >= .260 ? '' : ba  >= .220 ? 'c-yellow' : 'c-red';
-    const opsCls = ops >= .850 ? 'c-green' : ops >= .750 ? '' : ops >= .650 ? 'c-yellow' : 'c-red';
+    const sc = col => stdCls(r[col], col, colMap);
     return `<tr>
       <td class="col-rank">${i+1}</td>
       <td class="col-name">${esc(r.Player||'')}</td>
       <td class="col-right" style="color:var(--text2)">${r.Age||''}</td>
       <td><span class="col-team-tag">${esc(r.Team||'')}</span></td>
       <td style="color:var(--text2);font-size:11px">${r.Lg||''}</td>
-      <td class="col-right" style="font-weight:600;color:${parseFloat(r.WAR||0)>=3?'var(--green)':parseFloat(r.WAR||0)<0?'var(--accent)':''}">${r.WAR||'—'}</td>
+      <td class="col-right ${sc('WAR')}" style="font-weight:600">${r.WAR||'—'}</td>
       <td class="col-right">${r.G||'—'}</td>
       <td class="col-right">${r.PA||'—'}</td>
       <td class="col-right" style="color:var(--text2)">${r.AB||'—'}</td>
@@ -4789,16 +4877,16 @@ function statsRenderBatting() {
       <td class="col-right">${r.H||'—'}</td>
       <td class="col-right" style="color:var(--text2)">${r['2B']||'—'}</td>
       <td class="col-right" style="color:var(--text2)">${r['3B']||'—'}</td>
-      <td class="col-right" style="font-weight:600">${r.HR||'—'}</td>
-      <td class="col-right">${r.RBI||'—'}</td>
-      <td class="col-right">${r.SB||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r.BB||'—'}</td>
+      <td class="col-right ${sc('HR')}" style="font-weight:600">${r.HR||'—'}</td>
+      <td class="col-right ${sc('RBI')}">${r.RBI||'—'}</td>
+      <td class="col-right ${sc('SB')}">${r.SB||'—'}</td>
+      <td class="col-right ${sc('BB')}">${r.BB||'—'}</td>
       <td class="col-right" style="color:var(--text2)">${r.SO||'—'}</td>
-      <td class="col-right ${baCls}" style="font-size:13px;letter-spacing:-0.5px">${r.BA||'—'}</td>
-      <td class="col-right">${r.OBP||'—'}</td>
-      <td class="col-right">${r.SLG||'—'}</td>
-      <td class="col-right ${opsCls}" style="font-weight:700;font-size:13px">${r.OPS||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r['OPS+']||'—'}</td>
+      <td class="col-right ${sc('BA')}" style="font-size:13px;letter-spacing:-0.5px">${r.BA||'—'}</td>
+      <td class="col-right ${sc('OBP')}">${r.OBP||'—'}</td>
+      <td class="col-right ${sc('SLG')}">${r.SLG||'—'}</td>
+      <td class="col-right ${sc('OPS')}" style="font-weight:700;font-size:13px">${r.OPS||'—'}</td>
+      <td class="col-right ${sc('OPS+')}">${r['OPS+']||'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -4858,32 +4946,34 @@ function statsRenderPitching() {
   // Update team filter
   populateTeamFilter('stats-team', [...new Set(STATS.pitching.map(r => r.Team).filter(Boolean))].sort());
 
+  // Percentile color map + legend
+  const colMap = computeStdColMap(rows, PITCHING_STAT_COLS);
+  const legendEl = document.getElementById('stats-pitching-legend');
+  if (legendEl) legendEl.innerHTML = STD_LEGEND_HTML;
+
   body.innerHTML = rows.map((r, i) => {
-    const era  = parseFloat(r.ERA)  || 99;
-    const whip = parseFloat(r.WHIP) || 99;
-    const eraCls  = era  < 3.00 ? 'c-green' : era  < 4.00 ? '' : era  < 5.00 ? 'c-yellow' : 'c-red';
-    const whipCls = whip < 1.10 ? 'c-green' : whip < 1.30 ? '' : whip < 1.50 ? 'c-yellow' : 'c-red';
+    const sc = col => stdCls(r[col], col, colMap);
     return `<tr>
       <td class="col-rank">${i+1}</td>
       <td class="col-name">${esc(r.Player||'')}</td>
       <td class="col-right" style="color:var(--text2)">${r.Age||''}</td>
       <td><span class="col-team-tag">${esc(r.Team||'')}</span></td>
       <td style="color:var(--text2);font-size:11px">${r.Lg||''}</td>
-      <td class="col-right" style="font-weight:600;color:${parseFloat(r.WAR||0)>=3?'var(--green)':parseFloat(r.WAR||0)<0?'var(--accent)':''}">${r.WAR||'—'}</td>
-      <td class="col-right c-green">${r.W||'—'}</td>
-      <td class="col-right c-red">${r.L||'—'}</td>
-      <td class="col-right ${eraCls}" style="font-weight:700;font-size:13px">${r.ERA||'—'}</td>
+      <td class="col-right ${sc('WAR')}" style="font-weight:600">${r.WAR||'—'}</td>
+      <td class="col-right ${sc('W')}">${r.W||'—'}</td>
+      <td class="col-right ${sc('L')}">${r.L||'—'}</td>
+      <td class="col-right ${sc('ERA')}" style="font-weight:700;font-size:13px">${r.ERA||'—'}</td>
       <td class="col-right">${r.G||'—'}</td>
       <td class="col-right">${r.GS||'—'}</td>
       <td class="col-right">${r.SV||'—'}</td>
       <td class="col-right">${r.IP||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r.H||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r.BB||'—'}</td>
-      <td class="col-right" style="font-weight:600">${r.SO||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r.HR||'—'}</td>
-      <td class="col-right ${whipCls}" style="font-weight:600">${r.WHIP||'—'}</td>
-      <td class="col-right" style="color:${parseFloat(r['ERA+']||100)>=130?'var(--green)':parseFloat(r['ERA+']||100)<80?'var(--accent)':''}">${r['ERA+']||'—'}</td>
-      <td class="col-right" style="color:var(--text2)">${r.FIP||'—'}</td>
+      <td class="col-right ${sc('H')}">${r.H||'—'}</td>
+      <td class="col-right ${sc('BB')}">${r.BB||'—'}</td>
+      <td class="col-right ${sc('SO')}" style="font-weight:600">${r.SO||'—'}</td>
+      <td class="col-right ${sc('HR')}">${r.HR||'—'}</td>
+      <td class="col-right ${sc('WHIP')}" style="font-weight:600">${r.WHIP||'—'}</td>
+      <td class="col-right ${sc('ERA+')}">${r['ERA+']||'—'}</td>
+      <td class="col-right ${sc('FIP')}">${r.FIP||'—'}</td>
     </tr>`;
   }).join('');
 }
