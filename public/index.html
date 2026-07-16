@@ -572,6 +572,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 }
 .cmp-col-header {
   padding: 12px 14px;
+  text-align: center;
   border-bottom: 2px solid var(--border);
   border-right: 1px solid var(--border);
   font-weight: 700;
@@ -1309,6 +1310,39 @@ tbody td { padding: 9px 12px; font-size: 13px; }
     <div class="filters">
       <input type="text" class="search-box" id="stats-search" placeholder="Search player…" oninput="statsRender()" style="width:140px">
       <select class="filter-select" id="stats-team" onchange="statsRender()"><option value="">All Teams</option></select>
+      <select class="filter-select" id="stats-pos" onchange="statsRender()">
+        <option value="">All Positions</option>
+        <option value="SP">SP</option>
+        <option value="RP">RP</option>
+        <option value="C">C</option>
+        <option value="1B">1B</option>
+        <option value="2B">2B</option>
+        <option value="3B">3B</option>
+        <option value="SS">SS</option>
+        <option value="LF">LF</option>
+        <option value="CF">CF</option>
+        <option value="RF">RF</option>
+        <option value="DH">DH</option>
+        <option value="OF">OF</option>
+      </select>
+      <select class="filter-select" id="stats-division" onchange="statsRender()">
+        <option value="">All Divisions</option>
+        <option value="AL East">AL East</option>
+        <option value="AL Central">AL Central</option>
+        <option value="AL West">AL West</option>
+        <option value="NL East">NL East</option>
+        <option value="NL Central">NL Central</option>
+        <option value="NL West">NL West</option>
+      </select>
+      <select class="filter-select" id="stats-qualifier" onchange="statsRender()">
+        <option value="0">No Qualifier</option>
+        <option value="50">Min 50 PA / 10 IP</option>
+        <option value="100">Min 100 PA / 20 IP</option>
+        <option value="150">Min 150 PA / 30 IP</option>
+        <option value="200">Min 200 PA / 40 IP</option>
+        <option value="300">Min 300 PA / 60 IP</option>
+        <option value="400">Min 400 PA / 80 IP</option>
+      </select>
       <select class="filter-select" id="stats-league" onchange="statsRender()">
         <option value="">All Leagues</option>
         <option value="AL">AL</option>
@@ -1659,14 +1693,16 @@ tbody td { padding: 9px 12px; font-size: 13px; }
           <input type="text" id="cmp-search" placeholder="Add player…" oninput="cmpSearchInput()" autocomplete="off">
           <div class="cmp-dropdown" id="cmp-dropdown" style="display:none"></div>
         </div>
-        <button onclick="cmpToggleCustomizer()" id="cmp-customize-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;margin-left:8px" title="Show/hide individual stats">⚙ Stats</button>
+        <div style="position:relative;margin-left:8px">
+          <button onclick="cmpToggleCustomizer()" id="cmp-customize-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap" title="Show/hide individual stats">⚙ Stats ▾</button>
+          <!-- Stat customizer dropdown -->
+          <div id="cmp-customizer" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:200;min-width:280px;max-width:360px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.3);padding:12px 14px">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Visible Stats — click to hide</div>
+            <div id="cmp-stat-toggles" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          </div>
+        </div>
         <div class="modal-close" onclick="closeCompareModal()" style="margin-left:8px">✕</div>
       </div>
-    </div>
-    <!-- Stat customizer panel (hidden by default) -->
-    <div id="cmp-customizer" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2)">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Toggle Stats</div>
-      <div id="cmp-stat-toggles" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
     <div class="cmp-body" id="cmp-body">
       <div class="cmp-empty-state">Add 2–4 players using the search box above to start comparing.</div>
@@ -2283,6 +2319,7 @@ function sgsGetFiltered() {
 }
 
 function sgsAggregate(rows) {
+  const map = {};
   const rawMin = parseInt(document.getElementById('sgs-min').value) || 0;
   const monthActive = !!document.getElementById('sgs-month').value;
   // When filtering by a single month, a season-long GS minimum makes no sense
@@ -4213,6 +4250,15 @@ function cmpToggleCustomizer() {
   if (!isOpen) cmpRenderStatToggles();
 }
 
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('cmp-customizer');
+  const btn   = document.getElementById('cmp-customize-btn');
+  if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
 function cmpRenderStatToggles() {
   const container = document.getElementById('cmp-stat-toggles');
   if (!CMP_ALL_STAT_DEFS.length) {
@@ -4221,12 +4267,20 @@ function cmpRenderStatToggles() {
   }
   container.innerHTML = CMP_ALL_STAT_DEFS.map(label => {
     const hidden = CMP_HIDDEN_STATS.has(label);
-    return `<button onclick="cmpToggleStat(${JSON.stringify(label)})"
-      style="padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid var(--border);
-             background:${hidden ? 'var(--surface)' : 'var(--green)'};
-             color:${hidden ? 'var(--text2)' : '#000'};
-             font-weight:${hidden ? '400' : '600'};
-             opacity:${hidden ? '0.6' : '1'}">${esc(label)}</button>`;
+    if (hidden) {
+      // Hidden stats: show as muted chips — click to restore
+      return `<button onclick="cmpToggleStat(${JSON.stringify(label)})"
+        style="padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer;border:1px solid var(--border);
+               background:var(--surface);color:var(--text2);opacity:0.55"
+        title="Click to show">${esc(label)}</button>`;
+    }
+    // Visible stats: show with ✕ to hide
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text1);font-weight:600">
+      ${esc(label)}
+      <button onclick="event.stopPropagation();cmpToggleStat(${JSON.stringify(label)})"
+        style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:10px;padding:0;line-height:1;margin-left:1px"
+        title="Hide">✕</button>
+    </span>`;
   }).join('');
 }
 
@@ -4248,6 +4302,60 @@ function closeCompareModal() {
 }
 function cmpBgClick(e) {
   if (e.target === document.getElementById('cmp-modal')) closeCompareModal();
+}
+
+// Standard stats lookup for Compare Players
+// Matches by exact name (case-insensitive), or by last name if no exact match found
+function cmpFindStdRow(arr, name, team) {
+  const nameLc = name.toLowerCase();
+  // Exact match first
+  let row = arr.find(r => String(r.Player||'').toLowerCase() === nameLc && (!team || r.Team === team));
+  if (!row) row = arr.find(r => String(r.Player||'').toLowerCase() === nameLc);
+  // Last-name fallback
+  if (!row) {
+    const last = nameLc.split(' ').slice(-1)[0];
+    const candidates = arr.filter(r => String(r.Player||'').toLowerCase().endsWith(last));
+    if (candidates.length === 1) row = candidates[0];
+    else if (team) row = candidates.find(r => r.Team === team) || null;
+  }
+  return row || null;
+}
+
+function cmpGetStdBattingStats(name, team) {
+  if (!STATS.batting?.length) return null;
+  const r = cmpFindStdRow(STATS.batting, name, team);
+  if (!r) return null;
+  return {
+    BA:     r.BA     ? parseFloat(r.BA)     : null,
+    OBP:    r.OBP    ? parseFloat(r.OBP)    : null,
+    SLG:    r.SLG    ? parseFloat(r.SLG)    : null,
+    OPS:    r.OPS    ? parseFloat(r.OPS)    : null,
+    OPSplus:r['OPS+']? parseFloat(r['OPS+']): null,
+    HR:     r.HR     ? parseInt(r.HR)       : null,
+    RBI:    r.RBI    ? parseInt(r.RBI)      : null,
+    SB:     r.SB     ? parseInt(r.SB)       : null,
+    PA:     r.PA     ? parseInt(r.PA)       : null,
+    WAR:    r.WAR    ? parseFloat(r.WAR)    : null,
+  };
+}
+
+function cmpGetStdPitchingStats(name, team) {
+  if (!STATS.pitching?.length) return null;
+  const r = cmpFindStdRow(STATS.pitching, name, team);
+  if (!r) return null;
+  return {
+    W:      r.W    ? parseInt(r.W)        : null,
+    L:      r.L    ? parseInt(r.L)        : null,
+    ERA:    r.ERA  ? parseFloat(r.ERA)    : null,
+    WHIP:   r.WHIP ? parseFloat(r.WHIP)  : null,
+    ERApls: r['ERA+'] ? parseFloat(r['ERA+']) : null,
+    FIP:    r.FIP  ? parseFloat(r.FIP)   : null,
+    IP:     r.IP   ? parseFloat(r.IP)    : null,
+    SO:     r.SO   ? parseInt(r.SO)      : null,
+    BB:     r.BB   ? parseInt(r.BB)      : null,
+    HR:     r.HR   ? parseInt(r.HR)      : null,
+    WAR:    r.WAR  ? parseFloat(r.WAR)   : null,
+  };
 }
 
 // Determine what data exists for a player
@@ -4399,6 +4507,7 @@ function cmpRender() {
   }
 
   // Helper: render a section of stat rows (respects CMP_HIDDEN_STATS)
+  // Each label cell gets an inline X button to quickly hide that stat
   function renderStatRows(defs, getStats) {
     let rows = '';
     const stats = cmpPlayers.map(p => getStats(p.name, p.team));
@@ -4406,7 +4515,7 @@ function cmpRender() {
       if (CMP_HIDDEN_STATS.has(def.label)) continue;
       const vals = stats.map(s => s ? s[def.key] : null);
       const numVals = vals.filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
-      const lowerBetter = def.key === 'era' || def.lowerBetter === true;
+      const lowerBetter = def.lowerBetter === true;
       const bestVal = numVals.length > 1
         ? (lowerBetter ? Math.min(...numVals.map(Number)) : Math.max(...numVals.map(Number)))
         : null;
@@ -4415,7 +4524,13 @@ function cmpRender() {
         : null;
       const boldStyle = def.bold ? 'font-weight:700;' : '';
       const labelStyle = def.bold ? 'font-weight:700;color:var(--text1)' : '';
-      rows += `<div class="cmp-label-cell" style="${labelStyle}">${esc(def.label)}</div>`;
+      // Label cell with inline X
+      rows += `<div class="cmp-label-cell" style="${labelStyle};display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <span>${esc(def.label)}</span>
+        <button onclick="cmpToggleStat(${JSON.stringify(def.label)})"
+          style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text2);font-size:10px;padding:0 2px;opacity:0.5;line-height:1"
+          title="Hide stat">✕</button>
+      </div>`;
       for (let i = 0; i < cols; i++) {
         const v = vals[i];
         const isBest  = v !== null && v !== undefined && bestVal  !== null && Number(v) === bestVal;
@@ -4438,11 +4553,11 @@ function cmpRender() {
     { label: 'BR Pts',            key: 'brTotal', fmt: v => v.toFixed(2) },
     { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2), bold: true },
     { label: 'Max Possible Pts',  key: 'mx',      fmt: v => v.toFixed(2) },
-    { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%', bold: true },
+    { label: 'Production',        key: 'prod',    fmt: v => fmtProd(v), bold: true },
     ...(hasEG ? [
-      { label: 'Total Games',    key: 'totalGames', fmt: v => v },
-      { label: 'Empty Games',    key: 'emptyGames', fmt: v => v },
-      { label: 'Empty Game Rate', key: 'egPct',     fmt: v => (v * 100).toFixed(1) + '%', bold: true, lowerBetter: true },
+      { label: 'Total Games',     key: 'totalGames', fmt: v => v },
+      { label: 'Empty Games',     key: 'emptyGames', fmt: v => v },
+      { label: 'Empty Game Rate', key: 'egPct',      fmt: v => (v * 100).toFixed(1) + '%', bold: true, lowerBetter: true },
     ] : []),
   ];
   const pitcherDefs = [
@@ -4451,28 +4566,69 @@ function cmpRender() {
     { label: 'Best Start',  key: 'best',  fmt: v => v },
     { label: 'Worst Start', key: 'worst', fmt: v => v },
     { label: 'Total SGS',   key: 'total', fmt: v => v.toFixed(1) },
-    { label: 'ERA',         key: 'era',   fmt: v => v },
+    { label: 'ERA',         key: 'era',   fmt: v => v, lowerBetter: true },
   ];
+
+  // Standard stats — only included if data is loaded and at least one player is found
+  const hasStdBat = STATS.batting?.length > 0 && cmpPlayers.some(p => cmpGetStdBattingStats(p.name, p.team));
+  const hasStdPit = STATS.pitching?.length > 0 && cmpPlayers.some(p => cmpGetStdPitchingStats(p.name, p.team));
+
+  const stdBattingDefs = hasStdBat ? [
+    { label: 'PA (Std)',  key: 'PA',      fmt: v => v },
+    { label: 'BA',        key: 'BA',      fmt: v => v.toFixed(3).replace(/^0/, ''), bold: true },
+    { label: 'OBP',       key: 'OBP',     fmt: v => v.toFixed(3).replace(/^0/, '') },
+    { label: 'SLG',       key: 'SLG',     fmt: v => v.toFixed(3).replace(/^0/, '') },
+    { label: 'OPS',       key: 'OPS',     fmt: v => v.toFixed(3).replace(/^0/, ''), bold: true },
+    { label: 'OPS+',      key: 'OPSplus', fmt: v => Math.round(v) },
+    { label: 'HR (Std)',  key: 'HR',      fmt: v => v },
+    { label: 'RBI (Std)', key: 'RBI',     fmt: v => v },
+    { label: 'SB (Std)',  key: 'SB',      fmt: v => v },
+    { label: 'WAR (Bat)', key: 'WAR',     fmt: v => v.toFixed(1), bold: true },
+  ] : [];
+
+  const stdPitchingDefs = hasStdPit ? [
+    { label: 'W',         key: 'W',      fmt: v => v },
+    { label: 'L',         key: 'L',      fmt: v => v, lowerBetter: true },
+    { label: 'ERA (Std)', key: 'ERA',    fmt: v => v.toFixed(2), bold: true, lowerBetter: true },
+    { label: 'WHIP',      key: 'WHIP',   fmt: v => v.toFixed(2), lowerBetter: true },
+    { label: 'ERA+',      key: 'ERApls', fmt: v => Math.round(v) },
+    { label: 'FIP',       key: 'FIP',    fmt: v => v.toFixed(2), lowerBetter: true },
+    { label: 'IP (Std)',  key: 'IP',     fmt: v => v.toFixed(1) },
+    { label: 'SO (Std)',  key: 'SO',     fmt: v => v },
+    { label: 'BB (Std)',  key: 'BB',     fmt: v => v, lowerBetter: true },
+    { label: 'HR (Pit)',  key: 'HR',     fmt: v => v, lowerBetter: true },
+    { label: 'WAR (Pit)', key: 'WAR',    fmt: v => v.toFixed(1), bold: true },
+  ] : [];
 
   // Collect all stat labels for the customizer
   CMP_ALL_STAT_DEFS = [
-    ...(hasHitters ? hitterDefs : []),
-    ...(hasPitchers ? pitcherDefs : []),
+    ...(hasHitters  ? hitterDefs       : []),
+    ...(hasPitchers ? pitcherDefs      : []),
+    ...(hasStdBat   ? stdBattingDefs   : []),
+    ...(hasStdPit   ? stdPitchingDefs  : []),
   ].map(d => d.label);
 
+  const sectionStyle = 'grid-column:1/-1;padding:7px 14px;background:var(--surface);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)';
+
   if (hasHitters) {
-    // Section header for mixed comparisons
-    if (hasPitchers) {
-      html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Sisler Score</div>`;
-    }
+    if (hasPitchers || hasStdBat || hasStdPit)
+      html += `<div class="cmp-section-header" style="${sectionStyle};color:var(--green)">Sisler Score</div>`;
     html += renderStatRows(hitterDefs, cmpGetHitterStats);
   }
 
   if (hasPitchers) {
-    if (hasHitters) {
-      html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Simple Game Score</div>`;
-    }
+    html += `<div class="cmp-section-header" style="${sectionStyle};color:var(--blue)">Simple Game Score</div>`;
     html += renderStatRows(pitcherDefs, cmpGetPitcherStats);
+  }
+
+  if (hasStdBat) {
+    html += `<div class="cmp-section-header" style="${sectionStyle};color:var(--text2)">Standard Batting</div>`;
+    html += renderStatRows(stdBattingDefs, (name, team) => cmpGetStdBattingStats(name, team));
+  }
+
+  if (hasStdPit) {
+    html += `<div class="cmp-section-header" style="${sectionStyle};color:var(--text2)">Standard Pitching</div>`;
+    html += renderStatRows(stdPitchingDefs, (name, team) => cmpGetStdPitchingStats(name, team));
   }
 
   body.innerHTML = html + '</div>';
@@ -4509,6 +4665,22 @@ function statsSetView(view) {
   });
   document.getElementById('stats-pane-batting').style.display  = view === 'batting'  ? 'block' : 'none';
   document.getElementById('stats-pane-pitching').style.display = view === 'pitching' ? 'block' : 'none';
+  // Update position filter options based on view
+  const posEl = document.getElementById('stats-pos');
+  const curPos = posEl.value;
+  if (view === 'pitching') {
+    posEl.innerHTML = `<option value="">All Positions</option><option value="SP">SP</option><option value="RP">RP</option>`;
+  } else {
+    posEl.innerHTML = `<option value="">All Positions</option>
+      <option value="SP">SP</option><option value="RP">RP</option>
+      <option value="C">C</option><option value="1B">1B</option>
+      <option value="2B">2B</option><option value="3B">3B</option>
+      <option value="SS">SS</option><option value="LF">LF</option>
+      <option value="CF">CF</option><option value="RF">RF</option>
+      <option value="DH">DH</option><option value="OF">OF</option>`;
+  }
+  // Restore selection if still valid
+  if ([...posEl.options].some(o => o.value === curPos)) posEl.value = curPos;
   statsRender();
 }
 
@@ -4519,10 +4691,24 @@ function statsRender() {
 
 function statsGetFilters() {
   return {
-    q:      document.getElementById('stats-search').value.toLowerCase(),
-    team:   document.getElementById('stats-team').value,
-    league: document.getElementById('stats-league').value,
+    q:         document.getElementById('stats-search').value.toLowerCase(),
+    team:      document.getElementById('stats-team').value,
+    league:    document.getElementById('stats-league').value,
+    pos:       document.getElementById('stats-pos').value,
+    division:  document.getElementById('stats-division').value,
+    qualifier: parseInt(document.getElementById('stats-qualifier').value) || 0,
   };
+}
+
+// Look up position for a player from EG data (which has Pos column)
+function statsGetPos(playerName, team) {
+  const egRow = (EG.combined || []).find(r =>
+    r.player?.toLowerCase() === playerName.toLowerCase() && (!team || r.team === team));
+  if (egRow?.pos) return egRow.pos;
+  // Try SISLER data too
+  const sisRow = (SISLER.raw || []).find(r =>
+    r.player?.toLowerCase() === playerName.toLowerCase() && (!team || r.team === team));
+  return sisRow?.pos || '';
 }
 
 function statsSortBy(view, col) {
@@ -4544,13 +4730,19 @@ function statsRenderBatting() {
     body.innerHTML = '<tr class="no-rows"><td colspan="23">Upload Batting CSV in Admin to view data</td></tr>';
     return;
   }
-  const { q, team, league } = statsGetFilters();
+  const { q, team, league, pos, division, qualifier } = statsGetFilters();
   const { col, dir } = STATS.battingSort;
 
   let rows = STATS.batting.filter(r => {
-    if (q      && !String(r.Player||'').toLowerCase().includes(q)) return false;
-    if (team   && r.Team !== team)   return false;
-    if (league && r.Lg   !== league) return false;
+    if (q         && !String(r.Player||'').toLowerCase().includes(q)) return false;
+    if (team      && r.Team !== team)   return false;
+    if (league    && r.Lg   !== league) return false;
+    if (qualifier && (parseInt(r.PA)||0) < qualifier) return false;
+    if (division  && (TEAM_DIVISION[r.Team] || '') !== division) return false;
+    if (pos) {
+      const p = statsGetPos(r.Player, r.Team);
+      if (!p || !p.toUpperCase().includes(pos.toUpperCase())) return false;
+    }
     return true;
   });
 
@@ -4617,13 +4809,23 @@ function statsRenderPitching() {
     body.innerHTML = '<tr class="no-rows"><td colspan="20">Upload Pitching CSV in Admin to view data</td></tr>';
     return;
   }
-  const { q, team, league } = statsGetFilters();
+  const { q, team, league, pos, division, qualifier } = statsGetFilters();
   const { col, dir } = STATS.pitchingSort;
 
   let rows = STATS.pitching.filter(r => {
-    if (q      && !String(r.Player||'').toLowerCase().includes(q)) return false;
-    if (team   && r.Team !== team)   return false;
-    if (league && r.Lg   !== league) return false;
+    if (q         && !String(r.Player||'').toLowerCase().includes(q)) return false;
+    if (team      && r.Team !== team)   return false;
+    if (league    && r.Lg   !== league) return false;
+    // Qualifier for pitchers = min IP (batting qualifier / 5 as a rough equivalent)
+    if (qualifier && (parseFloat(r.IP)||0) < qualifier / 5) return false;
+    if (division  && (TEAM_DIVISION[r.Team] || '') !== division) return false;
+    if (pos) {
+      // For pitchers: SP = has GS, RP = no GS
+      const gs = parseInt(r.GS) || 0;
+      if (pos === 'SP' && gs === 0) return false;
+      if (pos === 'RP' && gs > 0)   return false;
+      if (!['SP','RP'].includes(pos)) return false; // non-pitcher position selected
+    }
     return true;
   });
 
@@ -4928,8 +5130,10 @@ function getSeriesAggregates() {
 function getFilteredAggregates(outcome, ha, lenFilter) {
   return Object.entries(SERIES.teams).map(([team, {games, series}]) => {
     const filtered = series.filter(s => seriesMatchesFilters(s, outcome, ha, lenFilter));
-    const gW = games.filter(g => g.result === 'W').length;
-    const gL = games.filter(g => g.result === 'L').length;
+    // Use games from the filtered series so H/A and other filters affect W-L record
+    const filteredGames = filtered.flatMap(s => s.games);
+    const gW = filteredGames.filter(g => g.result === 'W').length;
+    const gL = filteredGames.filter(g => g.result === 'L').length;
     const sW = filtered.filter(s => s.result === 'W').length;
     const sL = filtered.filter(s => s.result === 'L').length;
     const sT = filtered.filter(s => s.result === 'T').length;
@@ -5324,57 +5528,110 @@ function renderSeriesStandings() {
   const aggByTeam = {};
   for (const r of agg) aggByTeam[r.team] = r;
 
-  // Group by division
+  // ── Determine playoff spots ───────────────────────────────────────────
+  // Division winner = best game win% per division
+  // Wild card = top 3 remaining records per league
+  const playoffTeams = new Set();
+  const divisionWinners = new Set();
+
+  for (const lg of ['AL','NL']) {
+    const lgDivs = [`${lg} East`,`${lg} Central`,`${lg} West`];
+    const divWinnerRows = [];
+    const nonWinnerRows = [];
+
+    for (const div of lgDivs) {
+      const divTeams = Object.keys(SERIES.teams).filter(t => TEAM_DIVISION[t] === div);
+      const sorted = divTeams.map(t => aggByTeam[t]).filter(Boolean)
+        .sort((a, b) => b.winPct - a.winPct || (b.gW - b.gL) - (a.gW - a.gL));
+      if (sorted.length) {
+        divWinnerRows.push(sorted[0]);
+        divisionWinners.add(sorted[0].team);
+        for (let i = 1; i < sorted.length; i++) nonWinnerRows.push(sorted[i]);
+      }
+    }
+    nonWinnerRows.sort((a, b) => b.winPct - a.winPct || (b.gW - b.gL) - (a.gW - a.gL));
+    for (const r of divWinnerRows) playoffTeams.add(r.team);
+    for (const r of nonWinnerRows.slice(0, 3)) playoffTeams.add(r.team);
+  }
+
+  // ── Build grid ────────────────────────────────────────────────────────
   const divOrder = ['AL East','AL Central','AL West','NL East','NL Central','NL West'];
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:4px 0">';
+  // 3-column grid: AL top row, NL bottom row
+  const cols = (division || league) ? 1 : 3;
+  let html = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:16px;padding:4px 0">`;
 
   for (const div of divOrder) {
-    // Skip divisions not matching division/league filter
     if (division && div !== division) continue;
     if (league && !div.startsWith(league)) continue;
 
     let divTeams = Object.keys(SERIES.teams).filter(t => TEAM_DIVISION[t] === div);
-    // Apply team search filter
     if (q) divTeams = divTeams.filter(t => normStr(t).includes(q));
-    if (!divTeams.length) continue;
+
+    if (!divTeams.length) {
+      if (!division && !league && !q) html += '<div></div>'; // placeholder to keep grid
+      continue;
+    }
 
     const rows = divTeams.map(t => aggByTeam[t]).filter(Boolean)
-      .sort((a, b) => b.serWinPct - a.serWinPct);
+      .sort((a, b) => b.winPct - a.winPct || (b.gW - b.gL) - (a.gW - a.gL));
+    const leader = rows[0];
 
     html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
       <div style="padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">${div}</div>
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="font-size:10px;color:var(--text2)">
           <th style="padding:5px 14px;text-align:left;font-weight:600">Team</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600">Ser</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600">W</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600">L</th>
-          <th style="padding:5px 8px;text-align:right;font-weight:600">T</th>
-          <th style="padding:5px 14px 5px 8px;text-align:right;font-weight:600">Ser W%</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">W-L</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">GB</th>
+          <th style="padding:5px 8px;text-align:right;font-weight:600">W%</th>
+          <th style="padding:5px 14px 5px 8px;text-align:right;font-weight:600">Ser%</th>
         </tr></thead>
         <tbody>`;
 
     for (const r of rows) {
-      const color  = MLB_TEAM_COLORS[r.team] || '#4a5568';
-      const rdCls  = r.serWinPct >= 0.5 ? 'color:var(--green)' : 'color:var(--accent)';
-      html += `<tr style="border-top:1px solid var(--border)">
-        <td style="padding:7px 14px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:20px;height:20px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:800;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5);flex-shrink:0">${esc(r.team.slice(0,3))}</div>
-            <span style="font-size:12px;font-weight:600">${esc(r.team)}</span>
+      const color = MLB_TEAM_COLORS[r.team] || '#4a5568';
+      const wPctCls  = r.winPct  >= 0.5 ? 'color:var(--green)' : 'color:var(--accent)';
+      const sPctCls  = r.serWinPct >= 0.5 ? 'color:var(--green)' : 'color:var(--accent)';
+
+      const gb = ((leader.gW - r.gW) + (r.gL - leader.gL)) / 2;
+      const gbStr = gb <= 0 ? '<span style="color:var(--text2)">—</span>'
+                  : gb % 1 !== 0 ? `<span style="color:var(--text2)">${gb.toFixed(1)}</span>`
+                  : `<span style="color:var(--text2)">${gb.toFixed(0)}</span>`;
+
+      const isDivWin  = divisionWinners.has(r.team);
+      const isWC      = !isDivWin && playoffTeams.has(r.team);
+      const badge = isDivWin
+        ? `<span style="background:var(--green);color:white;font-size:7px;padding:1px 4px;border-radius:3px;margin-left:5px;font-weight:700;vertical-align:middle">DIV</span>`
+        : isWC
+        ? `<span style="background:#3b82f6;color:white;font-size:7px;padding:1px 4px;border-radius:3px;margin-left:5px;font-weight:700;vertical-align:middle">WC</span>`
+        : '';
+      const rowBg = isDivWin ? 'background:rgba(46,160,67,0.07)' : isWC ? 'background:rgba(59,130,246,0.05)' : '';
+
+      html += `<tr style="border-top:1px solid var(--border);${rowBg}">
+        <td style="padding:6px 14px">
+          <div style="display:flex;align-items:center;gap:7px">
+            <div style="width:18px;height:18px;border-radius:50%;background:${color};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:5px;font-weight:800;color:white">${esc(r.team.slice(0,3))}</div>
+            <span style="font-size:12px;font-weight:600">${esc(r.team)}</span>${badge}
           </div>
         </td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;color:var(--text2)">${r.serTotal}</td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;color:var(--green)">${r.sW}</td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;color:var(--accent)">${r.sL}</td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;color:var(--text2)">${r.sT}</td>
-        <td style="padding:7px 14px 7px 8px;text-align:right;font-size:13px;font-weight:700;${rdCls}">${(r.serWinPct*100).toFixed(1)}%</td>
+        <td style="padding:6px 8px;text-align:right;font-size:12px;font-weight:600">${r.gW}-${r.gL}</td>
+        <td style="padding:6px 8px;text-align:right;font-size:12px">${gbStr}</td>
+        <td style="padding:6px 8px;text-align:right;font-size:12px;font-weight:600;${wPctCls}">${(r.winPct*100).toFixed(1)}%</td>
+        <td style="padding:6px 14px 6px 8px;text-align:right;font-size:12px;${sPctCls}">${(r.serWinPct*100).toFixed(1)}%</td>
       </tr>`;
     }
-
     html += `</tbody></table></div>`;
   }
   html += '</div>';
+
+  // Legend (only when showing full standings)
+  if (!division && !league && !q) {
+    html += `<div style="margin-top:10px;display:flex;gap:16px;font-size:10px;color:var(--text2);padding:0 2px">
+      <span><span style="background:var(--green);color:white;font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700">DIV</span> Division Leader</span>
+      <span><span style="background:#3b82f6;color:white;font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700">WC</span> Wild Card (top 3 per league)</span>
+    </div>`;
+  }
+
   body.innerHTML = html;
 }
 
