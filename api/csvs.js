@@ -6,12 +6,13 @@ module.exports = async function handler(req, res) {
 
   const { blobs } = await list({ prefix: 'csvs/' });
 
-  // Return proxy URLs (/api/csv?key=...) instead of direct blob URLs.
-  // Direct blob URLs require auth because the store is private.
+  // Blobs are stored with access: 'public', so direct CDN URLs work from the browser.
+  // Using direct URLs avoids routing large CSVs through a serverless function,
+  // which can timeout for large files like the Sisler PA CSV.
   const result = {};
   for (const b of blobs) {
     const key = b.pathname.replace('csvs/', '').replace('.csv', '');
-    result[key] = `/api/csv?key=${encodeURIComponent(key)}`;
+    result[key] = b.url;
   }
 
   res.status(200).json(result);
