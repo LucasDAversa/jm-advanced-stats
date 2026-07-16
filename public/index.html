@@ -825,6 +825,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
   <div class="stat-tab" onclick="switchStat('sgs')">📊 Simple Game Score</div>
   <div class="stat-tab" onclick="switchStat('sisler')">🏃 Sisler Stat</div>
   <div class="stat-tab" onclick="switchStat('series')">📋 Series Standings</div>
+  <div class="stat-tab" onclick="switchStat('stats')">📈 Standard Stats</div>
   <div class="stat-tab" onclick="switchStat('admin')" style="margin-left:auto;opacity:0.7">⚙ Admin</div>
 </div>
 
@@ -1105,6 +1106,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
               <th data-col="sisler_score" onclick="sislerSort('sisler_score')" style="text-align:right">Sisler Score</th>
               <th data-col="max_pts"      onclick="sislerSort('max_pts')"      style="text-align:right">Max Possible</th>
               <th data-col="production"   onclick="sislerSort('production')"   style="text-align:right">Production</th>
+              <th data-col="prod_plus"    onclick="sislerSort('prod_plus')"    style="text-align:right">Production+</th>
               <th class="no-sort"         style="text-align:right">Log</th>
             </tr>
           </thead>
@@ -1160,6 +1162,7 @@ tbody td { padding: 9px 12px; font-size: 13px; }
         <div class="view-tab" onclick="seriesSetView('timeline')">Timeline</div>
         <div class="view-tab active" onclick="seriesSetView('table')">Series Records</div>
         <div class="view-tab" onclick="seriesSetView('standings')">Standings</div>
+        <div class="view-tab" onclick="seriesSetView('bygame')">Record by Game</div>
       </div>
       <button class="dl-btn" onclick="downloadSeriesCSV()" title="Download Series Records as CSV">
         <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
@@ -1268,7 +1271,126 @@ tbody td { padding: 9px 12px; font-size: 13px; }
       <div id="series-standings-body"></div>
     </div>
 
+    <!-- ── Record by Game view ── -->
+    <div id="series-pane-bygame" style="display:none">
+      <div class="table-wrap">
+        <table id="series-bygame-table">
+          <thead>
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th onclick="seriesByGameSortBy('team')">Team</th>
+              <th data-col="g1pct" onclick="seriesByGameSortBy('g1pct')" style="text-align:right">Game 1</th>
+              <th data-col="g2pct" onclick="seriesByGameSortBy('g2pct')" style="text-align:right">Game 2</th>
+              <th data-col="g3pct" onclick="seriesByGameSortBy('g3pct')" style="text-align:right">Game 3+</th>
+              <th data-col="rmpct" onclick="seriesByGameSortBy('rmpct')" style="text-align:right" title="Rubber Match: Game 3 of a series tied 1-1">Rubber Match</th>
+            </tr>
+          </thead>
+          <tbody id="series-bygame-body">
+            <tr class="no-rows"><td colspan="6">Upload a Team Game Log CSV to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div><!-- /panel-series -->
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- STANDARD STATS                         -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="stat-panel" id="panel-stats">
+
+    <div class="toolbar">
+      <div class="view-tabs" id="stats-view-tabs">
+        <div class="view-tab active" onclick="statsSetView('batting')">Batting</div>
+        <div class="view-tab" onclick="statsSetView('pitching')">Pitching</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <input type="text" class="search-box" id="stats-search" placeholder="Search player…" oninput="statsRender()" style="width:140px">
+      <select class="filter-select" id="stats-team" onchange="statsRender()"><option value="">All Teams</option></select>
+      <select class="filter-select" id="stats-league" onchange="statsRender()">
+        <option value="">All Leagues</option>
+        <option value="AL">AL</option>
+        <option value="NL">NL</option>
+      </select>
+    </div>
+
+    <!-- Batting table -->
+    <div id="stats-pane-batting">
+      <div class="table-wrap">
+        <table id="stats-batting-table">
+          <thead id="stats-batting-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th onclick="statsSortBy('batting','Player')">Player</th>
+              <th onclick="statsSortBy('batting','Age')" style="text-align:right">Age</th>
+              <th onclick="statsSortBy('batting','Team')">Team</th>
+              <th onclick="statsSortBy('batting','Lg')">Lg</th>
+              <th data-col="WAR"   onclick="statsSortBy('batting','WAR')"  style="text-align:right">WAR</th>
+              <th data-col="G"     onclick="statsSortBy('batting','G')"    style="text-align:right">G</th>
+              <th data-col="PA"    onclick="statsSortBy('batting','PA')"   style="text-align:right">PA</th>
+              <th data-col="AB"    onclick="statsSortBy('batting','AB')"   style="text-align:right">AB</th>
+              <th data-col="R"     onclick="statsSortBy('batting','R')"    style="text-align:right">R</th>
+              <th data-col="H"     onclick="statsSortBy('batting','H')"    style="text-align:right">H</th>
+              <th data-col="2B"    onclick="statsSortBy('batting','2B')"   style="text-align:right">2B</th>
+              <th data-col="3B"    onclick="statsSortBy('batting','3B')"   style="text-align:right">3B</th>
+              <th data-col="HR"    onclick="statsSortBy('batting','HR')"   style="text-align:right">HR</th>
+              <th data-col="RBI"   onclick="statsSortBy('batting','RBI')"  style="text-align:right">RBI</th>
+              <th data-col="SB"    onclick="statsSortBy('batting','SB')"   style="text-align:right">SB</th>
+              <th data-col="BB"    onclick="statsSortBy('batting','BB')"   style="text-align:right">BB</th>
+              <th data-col="SO"    onclick="statsSortBy('batting','SO')"   style="text-align:right">SO</th>
+              <th data-col="BA"    onclick="statsSortBy('batting','BA')"   style="text-align:right">BA</th>
+              <th data-col="OBP"   onclick="statsSortBy('batting','OBP')"  style="text-align:right">OBP</th>
+              <th data-col="SLG"   onclick="statsSortBy('batting','SLG')"  style="text-align:right">SLG</th>
+              <th data-col="OPS"   onclick="statsSortBy('batting','OPS')"  style="text-align:right" style="font-weight:700">OPS</th>
+              <th data-col="OPS+"  onclick="statsSortBy('batting','OPS+')" style="text-align:right">OPS+</th>
+            </tr>
+          </thead>
+          <tbody id="stats-batting-body">
+            <tr class="no-rows"><td colspan="23">Upload Batting CSV in Admin to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pitching table -->
+    <div id="stats-pane-pitching" style="display:none">
+      <div class="table-wrap">
+        <table id="stats-pitching-table">
+          <thead id="stats-pitching-head">
+            <tr>
+              <th class="col-rank no-sort">#</th>
+              <th onclick="statsSortBy('pitching','Player')">Player</th>
+              <th onclick="statsSortBy('pitching','Age')" style="text-align:right">Age</th>
+              <th onclick="statsSortBy('pitching','Team')">Team</th>
+              <th onclick="statsSortBy('pitching','Lg')">Lg</th>
+              <th data-col="WAR"   onclick="statsSortBy('pitching','WAR')"   style="text-align:right">WAR</th>
+              <th data-col="W"     onclick="statsSortBy('pitching','W')"     style="text-align:right">W</th>
+              <th data-col="L"     onclick="statsSortBy('pitching','L')"     style="text-align:right">L</th>
+              <th data-col="ERA"   onclick="statsSortBy('pitching','ERA')"   style="text-align:right">ERA</th>
+              <th data-col="G"     onclick="statsSortBy('pitching','G')"     style="text-align:right">G</th>
+              <th data-col="GS"    onclick="statsSortBy('pitching','GS')"    style="text-align:right">GS</th>
+              <th data-col="SV"    onclick="statsSortBy('pitching','SV')"    style="text-align:right">SV</th>
+              <th data-col="IP"    onclick="statsSortBy('pitching','IP')"    style="text-align:right">IP</th>
+              <th data-col="H"     onclick="statsSortBy('pitching','H')"     style="text-align:right">H</th>
+              <th data-col="BB"    onclick="statsSortBy('pitching','BB')"    style="text-align:right">BB</th>
+              <th data-col="SO"    onclick="statsSortBy('pitching','SO')"    style="text-align:right">SO</th>
+              <th data-col="HR"    onclick="statsSortBy('pitching','HR')"    style="text-align:right">HR</th>
+              <th data-col="WHIP"  onclick="statsSortBy('pitching','WHIP')"  style="text-align:right">WHIP</th>
+              <th data-col="ERA+"  onclick="statsSortBy('pitching','ERA+')"  style="text-align:right">ERA+</th>
+              <th data-col="FIP"   onclick="statsSortBy('pitching','FIP')"   style="text-align:right">FIP</th>
+            </tr>
+          </thead>
+          <tbody id="stats-pitching-body">
+            <tr class="no-rows"><td colspan="20">Upload Pitching CSV in Admin to view data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /panel-stats -->
+
 
   <!-- ═══════════════════════════════════════ -->
   <!-- ADMIN                                  -->
@@ -1352,6 +1474,22 @@ tbody td { padding: 9px 12px; font-size: 13px; }
           <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('series','series.csv')" title="Download saved CSV">↓ Saved</button>
           <button class="admin-csv-upload-btn" onclick="downloadTemplate('series')" title="Download template">↓ Template</button>
           <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadSeriesFile(event)"></label>
+        </div>
+
+        <div class="admin-csv-row">
+          <div class="admin-csv-label">Standard Stats — Batting</div>
+          <div class="admin-csv-status" id="acrs-stats-batting">Not loaded</div>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('stats-batting','stats-batting.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('stats-batting')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadStatsBattingFile(event)"></label>
+        </div>
+
+        <div class="admin-csv-row">
+          <div class="admin-csv-label">Standard Stats — Pitching</div>
+          <div class="admin-csv-status" id="acrs-stats-pitching">Not loaded</div>
+          <button class="admin-csv-upload-btn" onclick="adminDownloadSaved('stats-pitching','stats-pitching.csv')" title="Download saved CSV">↓ Saved</button>
+          <button class="admin-csv-upload-btn" onclick="downloadTemplate('stats-pitching')" title="Download template">↓ Template</button>
+          <label class="admin-csv-upload-btn">Upload <input type="file" accept=".csv" style="display:none" onchange="loadStatsPitchingFile(event)"></label>
         </div>
 
       </div>
@@ -1521,8 +1659,14 @@ tbody td { padding: 9px 12px; font-size: 13px; }
           <input type="text" id="cmp-search" placeholder="Add player…" oninput="cmpSearchInput()" autocomplete="off">
           <div class="cmp-dropdown" id="cmp-dropdown" style="display:none"></div>
         </div>
+        <button onclick="cmpToggleCustomizer()" id="cmp-customize-btn" style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;margin-left:8px" title="Show/hide individual stats">⚙ Stats</button>
         <div class="modal-close" onclick="closeCompareModal()" style="margin-left:8px">✕</div>
       </div>
+    </div>
+    <!-- Stat customizer panel (hidden by default) -->
+    <div id="cmp-customizer" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Toggle Stats</div>
+      <div id="cmp-stat-toggles" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
     <div class="cmp-body" id="cmp-body">
       <div class="cmp-empty-state">Add 2–4 players using the search box above to start comparing.</div>
@@ -1536,12 +1680,14 @@ tbody td { padding: 9px 12px; font-size: 13px; }
 // RAW CSV STORE (for Share-with-Data export)
 // ════════════════════════════════════════════
 const STORED_CSVS = {
-  egTotal:  null,
-  egEmpty:  null,
-  sgs:      null,
-  sislerPa: null,
-  sislerSb: null,
-  series:   null,
+  egTotal:      null,
+  egEmpty:      null,
+  sgs:          null,
+  sislerPa:     null,
+  sislerSb:     null,
+  series:       null,
+  statsBatting: null,
+  statsPitching: null,
 };
 
 // ════════════════════════════════════════════
@@ -1657,7 +1803,9 @@ function parseDate(s) {
 
 function getMonth(s) {
   const d = parseDate(s);
-  return d ? d.getMonth() + 1 : null;
+  // Use UTC methods — ISO date strings (e.g. "2026-07-13") parse as UTC midnight,
+  // so getMonth() would return the previous day in US timezones.
+  return d ? d.getUTCMonth() + 1 : null;
 }
 
 function sortData(arr, col, dir) {
@@ -1694,7 +1842,7 @@ function populateTeamFilter(selectId, teams) {
 function switchStat(id) {
   document.querySelectorAll('.stat-tab').forEach((t,i) => {
     t.classList.toggle('active',
-      (id==='eg'&&i===0)||(id==='sgs'&&i===1)||(id==='sisler'&&i===2)||(id==='series'&&i===3)||(id==='admin'&&i===4));
+      (id==='eg'&&i===0)||(id==='sgs'&&i===1)||(id==='sisler'&&i===2)||(id==='series'&&i===3)||(id==='stats'&&i===4)||(id==='admin'&&i===5));
   });
   document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
@@ -1742,12 +1890,14 @@ async function adminDownloadSaved(key, filename) {
 }
 
 const ADMIN_CSV_MAP = [
-  { key: 'eg-total',   storeKey: 'egTotal',   statusId: 'acrs-eg-total' },
-  { key: 'eg-empty',   storeKey: 'egEmpty',   statusId: 'acrs-eg-empty' },
-  { key: 'sgs',        storeKey: 'sgs',        statusId: 'acrs-sgs'      },
-  { key: 'sisler-pa',  storeKey: 'sislerPa',  statusId: 'acrs-sisler-pa'},
-  { key: 'sisler-sb',  storeKey: 'sislerSb',  statusId: 'acrs-sisler-sb'},
-  { key: 'series',     storeKey: 'series',    statusId: 'acrs-series'   },
+  { key: 'eg-total',       storeKey: 'egTotal',       statusId: 'acrs-eg-total'       },
+  { key: 'eg-empty',       storeKey: 'egEmpty',        statusId: 'acrs-eg-empty'       },
+  { key: 'sgs',            storeKey: 'sgs',            statusId: 'acrs-sgs'            },
+  { key: 'sisler-pa',      storeKey: 'sislerPa',       statusId: 'acrs-sisler-pa'      },
+  { key: 'sisler-sb',      storeKey: 'sislerSb',       statusId: 'acrs-sisler-sb'      },
+  { key: 'series',         storeKey: 'series',         statusId: 'acrs-series'         },
+  { key: 'stats-batting',  storeKey: 'statsBatting',   statusId: 'acrs-stats-batting'  },
+  { key: 'stats-pitching', storeKey: 'statsPitching',  statusId: 'acrs-stats-pitching' },
 ];
 
 function adminRefreshStatus() {
@@ -2133,9 +2283,12 @@ function sgsGetFiltered() {
 }
 
 function sgsAggregate(rows) {
-  const minGS = parseInt(document.getElementById('sgs-min').value) || 0;
+  const rawMin = parseInt(document.getElementById('sgs-min').value) || 0;
+  const monthActive = !!document.getElementById('sgs-month').value;
+  // When filtering by a single month, a season-long GS minimum makes no sense
+  // (e.g. Min 5 GS wipes out all results for a partial month). Drop to 1.
+  const minGS = monthActive ? Math.min(rawMin, 1) : rawMin;
   const isPlus = SGS.mode === 'sgs+';
-  const map = {};
   for (const r of rows) {
     const k = r.pid || r.player;
     if (!map[k]) map[k] = {player:r.player, pid:r.pid, team:r.team, pos:r.pos, gs:0, sum:0, scores:[]};
@@ -2461,6 +2614,15 @@ function prodClass(v) {
   return 'c-red';
 }
 
+// Production+ color: 100 = league avg
+function prodPlusClass(v) {
+  if (v >= 130) return 'c-green';
+  if (v >= 110) return 'c-lime';
+  if (v >= 90)  return 'c-text';
+  if (v >= 70)  return 'c-yellow';
+  return 'c-red';
+}
+
 function sNormEvent(raw) {
   const e = String(raw || '').trim();
   // Short-code aliases (BBRef event finder uses these)
@@ -2751,7 +2913,11 @@ function sislerUpdateCards(players) {
 
 function sislerRenderPlayer(players) {
   const { col, dir } = sislerSortState;
-  const sorted = sortData(players, col, dir);
+  // League avg production for Production+ (100 = avg)
+  const avgProd = players.length ? players.reduce((s,p) => s + (p.production||0), 0) / players.length : 0;
+  // Attach prod_plus to each player so sortData can sort by it
+  const withPlus = players.map(p => ({ ...p, prod_plus: avgProd > 0 ? Math.round(p.production / avgProd * 100) : null }));
+  const sorted = sortData(withPlus, col, dir);
   document.getElementById('sisler-player-head').innerHTML = `<tr>
     <th class="col-rank no-sort">#</th>
     <th data-col="player"       onclick="sislerSort('player')">Player</th>
@@ -2762,11 +2928,12 @@ function sislerRenderPlayer(players) {
     <th data-col="sisler_score" onclick="sislerSort('sisler_score')" style="text-align:right">Sisler Score</th>
     <th data-col="max_pts"      onclick="sislerSort('max_pts')"      style="text-align:right">Max Possible</th>
     <th data-col="production"   onclick="sislerSort('production')"   style="text-align:right">Production</th>
+    <th data-col="prod_plus"    onclick="sislerSort('prod_plus')"    style="text-align:right">Production+</th>
     <th class="no-sort"         style="text-align:right">Log</th>
   </tr>`;
   applySortIndicators('sisler-player-head', col, dir);
   const body = document.getElementById('sisler-player-body');
-  if (!sorted.length) { body.innerHTML = '<tr class="no-rows"><td colspan="10">No players match filters</td></tr>'; return; }
+  if (!sorted.length) { body.innerHTML = '<tr class="no-rows"><td colspan="11">No players match filters</td></tr>'; return; }
 
   body.innerHTML = sorted.map((p, i) => `
     <tr>
@@ -2779,6 +2946,7 @@ function sislerRenderPlayer(players) {
       <td class="col-right" style="font-weight:700">${fmtN(p.sisler_score)}</td>
       <td class="col-right" style="color:var(--text2)">${fmtN(p.max_pts)}</td>
       <td class="col-right ${prodClass(p.production)}" style="font-weight:700;font-size:14px;letter-spacing:-0.5px">${fmtProd(p.production)}</td>
+      <td class="col-right ${p.prod_plus != null ? prodPlusClass(p.prod_plus) : ''}" style="font-weight:700">${p.prod_plus != null ? p.prod_plus : '—'}</td>
       <td style="text-align:right"><button class="log-btn" data-sname="${esc(p.player)}" data-steam="${esc(p.team)}">Log</button></td>
     </tr>`).join('');
 }
@@ -3515,6 +3683,25 @@ async function loadPreloadedData() {
       buildSeriesData(data);
       setStatus('seriesst', 'seriesbtn', `✓ Pre-loaded (${data.length.toLocaleString()} rows)`);
     }
+
+    // Standard Stats — Batting
+    if (payload['stats-batting']) {
+      const text = await decompressText(payload['stats-batting']);
+      STORED_CSVS.statsBatting = text;
+      const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+      STATS.batting = data;
+      populateTeamFilter('stats-team', [...new Set(data.map(r => r.Team).filter(Boolean))].sort());
+      safeText('acrs-stats-batting', `✓ Pre-loaded (${data.length} rows)`);
+    }
+
+    // Standard Stats — Pitching
+    if (payload['stats-pitching']) {
+      const text = await decompressText(payload['stats-pitching']);
+      STORED_CSVS.statsPitching = text;
+      const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+      STATS.pitching = data;
+      safeText('acrs-stats-pitching', `✓ Pre-loaded (${data.length} rows)`);
+    }
   } catch (e) {
     console.error('Pre-load failed:', e);
   }
@@ -3665,6 +3852,27 @@ async function loadServerCSVs() {
     if (urls['series']) {
       const text = await fetchText(urls['series']);
       if (text) { buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
+    }
+    if (urls['stats-batting']) {
+      const text = await fetchText(urls['stats-batting']);
+      if (text) {
+        STORED_CSVS.statsBatting = text;
+        const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+        STATS.batting = data;
+        populateTeamFilter('stats-team', [...new Set(data.map(r => r.Team).filter(Boolean))].sort());
+        safeText('acrs-stats-batting', `✓ Server (${data.length} rows)`);
+        if (STATS.view === 'batting') statsRenderBatting();
+      }
+    }
+    if (urls['stats-pitching']) {
+      const text = await fetchText(urls['stats-pitching']);
+      if (text) {
+        STORED_CSVS.statsPitching = text;
+        const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+        STATS.pitching = data;
+        safeText('acrs-stats-pitching', `✓ Server (${data.length} rows)`);
+        if (STATS.view === 'pitching') statsRenderPitching();
+      }
     }
   } catch (e) {
     console.warn('loadServerCSVs error:', e);
@@ -3847,6 +4055,42 @@ const CSV_TEMPLATES = {
       ['NYY', '2026-04-08', '@', 'TBR', 'L',    '1', '4', '',  'Springs J.', 'Severino L.',''],
     ],
   },
+  // ── Standard Stats: Batting ───────────────────────────────────────────
+  // BBRef: Season → Batting Stats → Standard → Export CSV
+  // The "Rk" column repeats mid-table as BBRef navigation rows — they are
+  // automatically stripped on upload.
+  'stats-batting': {
+    filename: 'template_standard-batting.csv',
+    comment: [
+      '# Standard Batting Stats Template',
+      '# Source: Baseball Reference → Season → Batting → Standard → Export CSV',
+      '# Mid-table "Rk" header rows are stripped automatically on upload.',
+      '# Required columns: Rk, Player, Age, Team, Lg, WAR, G, PA, AB, R, H,',
+      '#   2B, 3B, HR, RBI, SB, BB, SO, BA, OBP, SLG, OPS, OPS+',
+    ],
+    headers: ['Rk','Player','Age','Team','Lg','WAR','G','PA','AB','R','H','2B','3B','HR','RBI','SB','CS','BB','SO','BA','OBP','SLG','OPS','OPS+'],
+    rows: [
+      ['1','Aaron Judge','33','NYY','AL','6.2','95','410','355','72','112','18','1','32','77','4','1','55','94','.315','.430','.638','1.068','196'],
+      ['2','Mookie Betts','33','LAD','NL','5.8','88','378','328','65','100','22','2','18','56','12','2','46','68','.305','.399','.531','.930','160'],
+    ],
+  },
+
+  // ── Standard Stats: Pitching ──────────────────────────────────────────
+  // BBRef: Season → Pitching Stats → Standard → Export CSV
+  'stats-pitching': {
+    filename: 'template_standard-pitching.csv',
+    comment: [
+      '# Standard Pitching Stats Template',
+      '# Source: Baseball Reference → Season → Pitching → Standard → Export CSV',
+      '# Required columns: Rk, Player, Age, Team, Lg, WAR, W, L, ERA, G, GS,',
+      '#   SV, IP, H, BB, SO, HR, WHIP, ERA+, FIP',
+    ],
+    headers: ['Rk','Player','Age','Team','Lg','WAR','W','L','W-L%','ERA','G','GS','GF','CG','SHO','SV','IP','H','R','ER','HR','BB','IBB','SO','HBP','BK','WP','BF','ERA+','FIP','WHIP'],
+    rows: [
+      ['1','Zack Wheeler','35','PHI','NL','5.1','11','4','.733','2.45','20','20','0','2','1','0','139.1','108','41','38','10','27','1','158','5','0','3','551','168','2.71','0.96'],
+      ['2','Tarik Skubal','28','DET','AL','4.9','10','5','.667','2.81','20','20','0','1','0','0','131.0','112','45','41','9','24','0','152','3','0','2','524','147','2.55','1.04'],
+    ],
+  },
 };
 
 /**
@@ -3957,6 +4201,41 @@ function downloadSislerBR()      { downloadSislerCombined(); }
 // ════════════════════════════════════════════
 
 let cmpPlayers = [];   // [{name, team}]
+const CMP_HIDDEN_STATS = new Set(); // labels of stats to hide
+
+// All possible stat labels for the customizer — built dynamically when first opened
+let CMP_ALL_STAT_DEFS = [];
+
+function cmpToggleCustomizer() {
+  const panel = document.getElementById('cmp-customizer');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) cmpRenderStatToggles();
+}
+
+function cmpRenderStatToggles() {
+  const container = document.getElementById('cmp-stat-toggles');
+  if (!CMP_ALL_STAT_DEFS.length) {
+    container.innerHTML = '<span style="font-size:12px;color:var(--text2)">Add players first to see available stats.</span>';
+    return;
+  }
+  container.innerHTML = CMP_ALL_STAT_DEFS.map(label => {
+    const hidden = CMP_HIDDEN_STATS.has(label);
+    return `<button onclick="cmpToggleStat(${JSON.stringify(label)})"
+      style="padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid var(--border);
+             background:${hidden ? 'var(--surface)' : 'var(--green)'};
+             color:${hidden ? 'var(--text2)' : '#000'};
+             font-weight:${hidden ? '400' : '600'};
+             opacity:${hidden ? '0.6' : '1'}">${esc(label)}</button>`;
+  }).join('');
+}
+
+function cmpToggleStat(label) {
+  if (CMP_HIDDEN_STATS.has(label)) CMP_HIDDEN_STATS.delete(label);
+  else CMP_HIDDEN_STATS.add(label);
+  cmpRenderStatToggles();
+  cmpRender();
+}
 
 function openCompareModal() {
   document.getElementById('cmp-modal').classList.add('open');
@@ -4119,11 +4398,12 @@ function cmpRender() {
     html += `<div class="cmp-add-col" style="color:var(--text2);font-size:11px">—</div>`;
   }
 
-  // Helper: render a section of stat rows
+  // Helper: render a section of stat rows (respects CMP_HIDDEN_STATS)
   function renderStatRows(defs, getStats) {
     let rows = '';
     const stats = cmpPlayers.map(p => getStats(p.name, p.team));
     for (const def of defs) {
+      if (CMP_HIDDEN_STATS.has(def.label)) continue;
       const vals = stats.map(s => s ? s[def.key] : null);
       const numVals = vals.filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
       const lowerBetter = def.key === 'era' || def.lowerBetter === true;
@@ -4151,25 +4431,40 @@ function cmpRender() {
     return rows;
   }
 
+  const hasEG = EG.combined?.length > 0;
+  const hitterDefs = [
+    { label: 'Plate Appearances', key: 'pa',      fmt: v => v },
+    { label: 'Hitting Pts',       key: 'hitPts',  fmt: v => v.toFixed(2) },
+    { label: 'BR Pts',            key: 'brTotal', fmt: v => v.toFixed(2) },
+    { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2), bold: true },
+    { label: 'Max Possible Pts',  key: 'mx',      fmt: v => v.toFixed(2) },
+    { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%', bold: true },
+    ...(hasEG ? [
+      { label: 'Total Games',    key: 'totalGames', fmt: v => v },
+      { label: 'Empty Games',    key: 'emptyGames', fmt: v => v },
+      { label: 'Empty Game Rate', key: 'egPct',     fmt: v => (v * 100).toFixed(1) + '%', bold: true, lowerBetter: true },
+    ] : []),
+  ];
+  const pitcherDefs = [
+    { label: 'Game Starts', key: 'gs',    fmt: v => v },
+    { label: 'Avg SGS',     key: 'avg',   fmt: v => v.toFixed(2) },
+    { label: 'Best Start',  key: 'best',  fmt: v => v },
+    { label: 'Worst Start', key: 'worst', fmt: v => v },
+    { label: 'Total SGS',   key: 'total', fmt: v => v.toFixed(1) },
+    { label: 'ERA',         key: 'era',   fmt: v => v },
+  ];
+
+  // Collect all stat labels for the customizer
+  CMP_ALL_STAT_DEFS = [
+    ...(hasHitters ? hitterDefs : []),
+    ...(hasPitchers ? pitcherDefs : []),
+  ].map(d => d.label);
+
   if (hasHitters) {
     // Section header for mixed comparisons
     if (hasPitchers) {
       html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Sisler Score</div>`;
     }
-    const hasEG = EG.combined?.length > 0;
-    const hitterDefs = [
-      { label: 'Plate Appearances', key: 'pa',      fmt: v => v },
-      { label: 'Hitting Pts',       key: 'hitPts',  fmt: v => v.toFixed(2) },
-      { label: 'BR Pts',            key: 'brTotal', fmt: v => v.toFixed(2) },
-      { label: 'Sisler Score',      key: 'score',   fmt: v => v.toFixed(2), bold: true },
-      { label: 'Max Possible Pts',  key: 'mx',      fmt: v => v.toFixed(2) },
-      { label: 'Production %',      key: 'prod',    fmt: v => v.toFixed(1) + '%', bold: true },
-      ...(hasEG ? [
-        { label: 'Total Games',    key: 'totalGames', fmt: v => v },
-        { label: 'Empty Games',    key: 'emptyGames', fmt: v => v },
-        { label: 'Empty Game Rate', key: 'egPct',     fmt: v => (v * 100).toFixed(1) + '%', bold: true, lowerBetter: true },
-      ] : []),
-    ];
     html += renderStatRows(hitterDefs, cmpGetHitterStats);
   }
 
@@ -4177,14 +4472,6 @@ function cmpRender() {
     if (hasHitters) {
       html += `<div class="cmp-section-header" style="grid-column:1/-1;padding:8px 12px;background:var(--surface);font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px;border-top:1px solid var(--border)">Simple Game Score</div>`;
     }
-    const pitcherDefs = [
-      { label: 'Game Starts', key: 'gs',    fmt: v => v },
-      { label: 'Avg SGS',     key: 'avg',   fmt: v => v.toFixed(2) },
-      { label: 'Best Start',  key: 'best',  fmt: v => v },
-      { label: 'Worst Start', key: 'worst', fmt: v => v },
-      { label: 'Total SGS',   key: 'total', fmt: v => v.toFixed(1) },
-      { label: 'ERA',         key: 'era',   fmt: v => v },
-    ];
     html += renderStatRows(pitcherDefs, cmpGetPitcherStats);
   }
 
@@ -4202,6 +4489,232 @@ document.addEventListener('click', e => {
   }
   if (!e.target.closest('.cmp-search-wrap')) dd.style.display = 'none';
 });
+
+// ════════════════════════════════════════════
+// STANDARD STATS — DATA & RENDERING
+// ════════════════════════════════════════════
+
+const STATS = {
+  batting:  [],
+  pitching: [],
+  view: 'batting',
+  battingSort:  { col: 'WAR', dir: 'desc' },
+  pitchingSort: { col: 'WAR', dir: 'desc' },
+};
+
+function statsSetView(view) {
+  STATS.view = view;
+  document.querySelectorAll('#stats-view-tabs .view-tab').forEach((t, i) => {
+    t.classList.toggle('active', (view === 'batting' && i === 0) || (view === 'pitching' && i === 1));
+  });
+  document.getElementById('stats-pane-batting').style.display  = view === 'batting'  ? 'block' : 'none';
+  document.getElementById('stats-pane-pitching').style.display = view === 'pitching' ? 'block' : 'none';
+  statsRender();
+}
+
+function statsRender() {
+  if (STATS.view === 'batting')  statsRenderBatting();
+  else                            statsRenderPitching();
+}
+
+function statsGetFilters() {
+  return {
+    q:      document.getElementById('stats-search').value.toLowerCase(),
+    team:   document.getElementById('stats-team').value,
+    league: document.getElementById('stats-league').value,
+  };
+}
+
+function statsSortBy(view, col) {
+  const state = view === 'batting' ? STATS.battingSort : STATS.pitchingSort;
+  state.dir = state.col === col && state.dir === 'desc' ? 'asc' : 'desc';
+  state.col = col;
+  statsRender();
+}
+
+function statsNumSort(a, b, col, dir) {
+  const va = parseFloat(a[col]) || 0;
+  const vb = parseFloat(b[col]) || 0;
+  return dir === 'desc' ? vb - va : va - vb;
+}
+
+function statsRenderBatting() {
+  const body = document.getElementById('stats-batting-body');
+  if (!STATS.batting.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="23">Upload Batting CSV in Admin to view data</td></tr>';
+    return;
+  }
+  const { q, team, league } = statsGetFilters();
+  const { col, dir } = STATS.battingSort;
+
+  let rows = STATS.batting.filter(r => {
+    if (q      && !String(r.Player||'').toLowerCase().includes(q)) return false;
+    if (team   && r.Team !== team)   return false;
+    if (league && r.Lg   !== league) return false;
+    return true;
+  });
+
+  rows = [...rows].sort((a, b) => {
+    const strCols = ['Player','Team','Lg'];
+    if (strCols.includes(col)) {
+      const va = String(a[col]||'').toLowerCase(), vb = String(b[col]||'').toLowerCase();
+      return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    return statsNumSort(a, b, col, dir);
+  });
+
+  // Sync sort indicators
+  document.querySelectorAll('#stats-batting-table th[data-col]').forEach(th => {
+    const c = th.getAttribute('data-col');
+    th.classList.toggle('sort-asc',  c === col && dir === 'asc');
+    th.classList.toggle('sort-desc', c === col && dir === 'desc');
+  });
+
+  if (!rows.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="23">No players match filters</td></tr>';
+    return;
+  }
+
+  // Update team filter options
+  populateTeamFilter('stats-team', [...new Set(STATS.batting.map(r => r.Team).filter(Boolean))].sort());
+
+  body.innerHTML = rows.map((r, i) => {
+    const ba  = parseFloat(r.BA)  || 0;
+    const ops = parseFloat(r.OPS) || 0;
+    const baCls  = ba  >= .300 ? 'c-green' : ba  >= .260 ? '' : ba  >= .220 ? 'c-yellow' : 'c-red';
+    const opsCls = ops >= .850 ? 'c-green' : ops >= .750 ? '' : ops >= .650 ? 'c-yellow' : 'c-red';
+    return `<tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(r.Player||'')}</td>
+      <td class="col-right" style="color:var(--text2)">${r.Age||''}</td>
+      <td><span class="col-team-tag">${esc(r.Team||'')}</span></td>
+      <td style="color:var(--text2);font-size:11px">${r.Lg||''}</td>
+      <td class="col-right" style="font-weight:600;color:${parseFloat(r.WAR||0)>=3?'var(--green)':parseFloat(r.WAR||0)<0?'var(--accent)':''}">${r.WAR||'—'}</td>
+      <td class="col-right">${r.G||'—'}</td>
+      <td class="col-right">${r.PA||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.AB||'—'}</td>
+      <td class="col-right">${r.R||'—'}</td>
+      <td class="col-right">${r.H||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r['2B']||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r['3B']||'—'}</td>
+      <td class="col-right" style="font-weight:600">${r.HR||'—'}</td>
+      <td class="col-right">${r.RBI||'—'}</td>
+      <td class="col-right">${r.SB||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.BB||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.SO||'—'}</td>
+      <td class="col-right ${baCls}" style="font-size:13px;letter-spacing:-0.5px">${r.BA||'—'}</td>
+      <td class="col-right">${r.OBP||'—'}</td>
+      <td class="col-right">${r.SLG||'—'}</td>
+      <td class="col-right ${opsCls}" style="font-weight:700;font-size:13px">${r.OPS||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r['OPS+']||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function statsRenderPitching() {
+  const body = document.getElementById('stats-pitching-body');
+  if (!STATS.pitching.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="20">Upload Pitching CSV in Admin to view data</td></tr>';
+    return;
+  }
+  const { q, team, league } = statsGetFilters();
+  const { col, dir } = STATS.pitchingSort;
+
+  let rows = STATS.pitching.filter(r => {
+    if (q      && !String(r.Player||'').toLowerCase().includes(q)) return false;
+    if (team   && r.Team !== team)   return false;
+    if (league && r.Lg   !== league) return false;
+    return true;
+  });
+
+  rows = [...rows].sort((a, b) => {
+    const strCols = ['Player','Team','Lg'];
+    if (strCols.includes(col)) {
+      const va = String(a[col]||'').toLowerCase(), vb = String(b[col]||'').toLowerCase();
+      return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    // ERA and WHIP and FIP: lower is better, invert for desc sort
+    const lowerBetter = ['ERA','WHIP','FIP'].includes(col);
+    const va = parseFloat(a[col]) || 0, vb2 = parseFloat(b[col]) || 0;
+    const diff = lowerBetter
+      ? (dir === 'desc' ? va - vb2 : vb2 - va)
+      : (dir === 'desc' ? vb2 - va : va - vb2);
+    return diff;
+  });
+
+  document.querySelectorAll('#stats-pitching-table th[data-col]').forEach(th => {
+    const c = th.getAttribute('data-col');
+    th.classList.toggle('sort-asc',  c === col && dir === 'asc');
+    th.classList.toggle('sort-desc', c === col && dir === 'desc');
+  });
+
+  if (!rows.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="20">No pitchers match filters</td></tr>';
+    return;
+  }
+
+  // Update team filter
+  populateTeamFilter('stats-team', [...new Set(STATS.pitching.map(r => r.Team).filter(Boolean))].sort());
+
+  body.innerHTML = rows.map((r, i) => {
+    const era  = parseFloat(r.ERA)  || 99;
+    const whip = parseFloat(r.WHIP) || 99;
+    const eraCls  = era  < 3.00 ? 'c-green' : era  < 4.00 ? '' : era  < 5.00 ? 'c-yellow' : 'c-red';
+    const whipCls = whip < 1.10 ? 'c-green' : whip < 1.30 ? '' : whip < 1.50 ? 'c-yellow' : 'c-red';
+    return `<tr>
+      <td class="col-rank">${i+1}</td>
+      <td class="col-name">${esc(r.Player||'')}</td>
+      <td class="col-right" style="color:var(--text2)">${r.Age||''}</td>
+      <td><span class="col-team-tag">${esc(r.Team||'')}</span></td>
+      <td style="color:var(--text2);font-size:11px">${r.Lg||''}</td>
+      <td class="col-right" style="font-weight:600;color:${parseFloat(r.WAR||0)>=3?'var(--green)':parseFloat(r.WAR||0)<0?'var(--accent)':''}">${r.WAR||'—'}</td>
+      <td class="col-right c-green">${r.W||'—'}</td>
+      <td class="col-right c-red">${r.L||'—'}</td>
+      <td class="col-right ${eraCls}" style="font-weight:700;font-size:13px">${r.ERA||'—'}</td>
+      <td class="col-right">${r.G||'—'}</td>
+      <td class="col-right">${r.GS||'—'}</td>
+      <td class="col-right">${r.SV||'—'}</td>
+      <td class="col-right">${r.IP||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.H||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.BB||'—'}</td>
+      <td class="col-right" style="font-weight:600">${r.SO||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.HR||'—'}</td>
+      <td class="col-right ${whipCls}" style="font-weight:600">${r.WHIP||'—'}</td>
+      <td class="col-right" style="color:${parseFloat(r['ERA+']||100)>=130?'var(--green)':parseFloat(r['ERA+']||100)<80?'var(--accent)':''}">${r['ERA+']||'—'}</td>
+      <td class="col-right" style="color:var(--text2)">${r.FIP||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function loadStatsBattingFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  file.text().then(text => {
+    STORED_CSVS.statsBatting = text;
+    const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    // Filter out blank/header rows (BBRef adds 'Rk' rows mid-table for navigation)
+    STATS.batting = data.filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+    populateTeamFilter('stats-team', [...new Set(STATS.batting.map(r => r.Team).filter(Boolean))].sort());
+    safeText('acrs-stats-batting', `✓ ${file.name} (${STATS.batting.length} rows)`);
+    if (STATS.view === 'batting') statsRenderBatting();
+    persistCSV('stats-batting', text);
+    adminRefreshStatus();
+  });
+}
+
+function loadStatsPitchingFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  file.text().then(text => {
+    STORED_CSVS.statsPitching = text;
+    const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
+    STATS.pitching = data.filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
+    if (STATS.view === 'pitching') statsRenderPitching();
+    safeText('acrs-stats-pitching', `✓ ${file.name} (${STATS.pitching.length} rows)`);
+    persistCSV('stats-pitching', text);
+    adminRefreshStatus();
+  });
+}
 
 // ════════════════════════════════════════════
 // SERIES STANDINGS — DATA STRUCTURES
@@ -4396,8 +4909,39 @@ function getSeriesAggregates() {
       winPct:    (gW + gL) > 0 ? gW / (gW + gL) : 0,
       sW, sL, sT,
       serTotal:  series.length,
-      // Win% = series won / total series (ties count as half-win: optional — using raw W%)
       serWinPct: series.length > 0 ? sW / series.length : 0,
+      get diff() { return this.serWinPct - this.winPct; },
+      homeW: home.filter(s => s.result === 'W').length,
+      homeL: home.filter(s => s.result === 'L').length,
+      homeT: home.filter(s => s.result === 'T').length,
+      awayW: away.filter(s => s.result === 'W').length,
+      awayL: away.filter(s => s.result === 'L').length,
+      awayT: away.filter(s => s.result === 'T').length,
+    };
+  });
+}
+
+/**
+ * Like getSeriesAggregates but filters each team's series first.
+ * Used so Records table and Standings respond to ha/outcome/lenFilter.
+ */
+function getFilteredAggregates(outcome, ha, lenFilter) {
+  return Object.entries(SERIES.teams).map(([team, {games, series}]) => {
+    const filtered = series.filter(s => seriesMatchesFilters(s, outcome, ha, lenFilter));
+    const gW = games.filter(g => g.result === 'W').length;
+    const gL = games.filter(g => g.result === 'L').length;
+    const sW = filtered.filter(s => s.result === 'W').length;
+    const sL = filtered.filter(s => s.result === 'L').length;
+    const sT = filtered.filter(s => s.result === 'T').length;
+    const home = filtered.filter(s =>  s.isHome);
+    const away = filtered.filter(s => !s.isHome);
+    return {
+      team,
+      gW, gL,
+      winPct:    (gW + gL) > 0 ? gW / (gW + gL) : 0,
+      sW, sL, sT,
+      serTotal:  filtered.length,
+      serWinPct: filtered.length > 0 ? sW / filtered.length : 0,
       get diff() { return this.serWinPct - this.winPct; },
       homeW: home.filter(s => s.result === 'W').length,
       homeL: home.filter(s => s.result === 'L').length,
@@ -4419,20 +4963,23 @@ function seriesSetView(view) {
     t.classList.toggle('active',
       (view === 'timeline'  && i === 0) ||
       (view === 'table'     && i === 1) ||
-      (view === 'standings' && i === 2));
+      (view === 'standings' && i === 2) ||
+      (view === 'bygame'    && i === 3));
   });
   document.getElementById('series-pane-timeline').style.display  = view === 'timeline'  ? 'block' : 'none';
   document.getElementById('series-pane-table').style.display     = view === 'table'     ? 'block' : 'none';
   document.getElementById('series-pane-standings').style.display = view === 'standings' ? 'block' : 'none';
+  document.getElementById('series-pane-bygame').style.display    = view === 'bygame'    ? 'block' : 'none';
   if (SERIES.loaded) seriesRender();
 }
 
 function seriesRender() {
   if (!SERIES.loaded) return;
   updateSeriesCards();
-  if (seriesView === 'timeline')  renderSeriesTimeline();
-  else if (seriesView === 'table') renderSeriesTable();
+  if (seriesView === 'timeline')       renderSeriesTimeline();
+  else if (seriesView === 'table')     renderSeriesTable();
   else if (seriesView === 'standings') renderSeriesStandings();
+  else if (seriesView === 'bygame')    renderSeriesByGame();
 }
 
 function updateSeriesCards() {
@@ -4583,11 +5130,20 @@ function renderSeriesTable() {
   const q        = normStr(document.getElementById('series-search').value);
   const league   = document.getElementById('series-league').value;
   const division = document.getElementById('series-division').value;
+  const outcome  = document.getElementById('series-outcome').value;
+  const ha       = document.getElementById('series-ha').value;
+  const lenFilter= document.getElementById('series-length').value;
 
-  let rows = getSeriesAggregates();
+  // Use filtered aggregates so ha/outcome/length apply to the totals shown
+  let rows = (outcome || ha || lenFilter)
+    ? getFilteredAggregates(outcome, ha, lenFilter)
+    : getSeriesAggregates();
+
   if (q)        rows = rows.filter(r => normStr(r.team).includes(q));
   if (league)   rows = rows.filter(r => TEAM_LEAGUE[r.team] === league);
   if (division) rows = rows.filter(r => TEAM_DIVISION[r.team] === division);
+  // Hide teams with zero series after filtering
+  rows = rows.filter(r => r.serTotal > 0);
   rows = sortData(rows, seriesTableSort.col, seriesTableSort.dir);
 
   const body = document.getElementById('series-records-body');
@@ -4636,6 +5192,115 @@ function seriesTableSortBy(col) {
 }
 
 // ════════════════════════════════════════════
+// SERIES — RECORD BY GAME RENDERER
+// ════════════════════════════════════════════
+
+let seriesByGameSort = { col: 'g1pct', dir: 'desc' };
+
+function seriesByGameSortBy(col) {
+  seriesByGameSort.dir = seriesByGameSort.col === col && seriesByGameSort.dir === 'desc' ? 'asc' : 'desc';
+  seriesByGameSort.col = col;
+  renderSeriesByGame();
+}
+
+function renderSeriesByGame() {
+  const body = document.getElementById('series-bygame-body');
+  if (!SERIES.loaded || !Object.keys(SERIES.teams).length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="6">Upload a Team Game Log CSV to view data.</td></tr>';
+    return;
+  }
+
+  const q        = normStr(document.getElementById('series-search').value);
+  const league   = document.getElementById('series-league').value;
+  const division = document.getElementById('series-division').value;
+  const outcome  = document.getElementById('series-outcome').value;
+  const ha       = document.getElementById('series-ha').value;
+  const lenFilter= document.getElementById('series-length').value;
+
+  let rows = Object.entries(SERIES.teams).map(([team, { series }]) => {
+    const filtered = series.filter(s => seriesMatchesFilters(s, outcome, ha, lenFilter));
+    let g1W=0,g1L=0,g1T=0, g2W=0,g2L=0,g2T=0, g3W=0,g3L=0,g3T=0, rmW=0,rmL=0;
+
+    for (const s of filtered) {
+      s.games.forEach((g, gi) => {
+        const res = g.result;
+        if (gi === 0) { if(res==='W') g1W++; else if(res==='L') g1L++; else g1T++; }
+        else if (gi === 1) { if(res==='W') g2W++; else if(res==='L') g2L++; else g2T++; }
+        else { if(res==='W') g3W++; else if(res==='L') g3L++; else g3T++; }
+
+        // Rubber match: game #3+ (gi===2) when series was tied 1-1 going in
+        if (gi === 2) {
+          const prevW = s.games.slice(0, 2).filter(pg => pg.result === 'W').length;
+          const prevL = s.games.slice(0, 2).filter(pg => pg.result === 'L').length;
+          if (prevW === 1 && prevL === 1) {
+            if (res === 'W') rmW++; else if (res === 'L') rmL++;
+          }
+        }
+      });
+    }
+
+    const g1tot = g1W+g1L, g2tot = g2W+g2L, g3tot = g3W+g3L, rmTot = rmW+rmL;
+    return {
+      team,
+      g1W,g1L,g1T, g2W,g2L,g2T, g3W,g3L,g3T, rmW,rmL,
+      g1pct: g1tot > 0 ? g1W/g1tot : -1,
+      g2pct: g2tot > 0 ? g2W/g2tot : -1,
+      g3pct: g3tot > 0 ? g3W/g3tot : -1,
+      rmpct: rmTot > 0 ? rmW/rmTot : -1,
+    };
+  });
+
+  if (q)        rows = rows.filter(r => normStr(r.team).includes(q));
+  if (league)   rows = rows.filter(r => TEAM_LEAGUE[r.team]   === league);
+  if (division) rows = rows.filter(r => TEAM_DIVISION[r.team] === division);
+
+  rows = sortData(rows, seriesByGameSort.col, seriesByGameSort.dir);
+
+  if (!rows.length) {
+    body.innerHTML = '<tr class="no-rows"><td colspan="6">No teams match current filters</td></tr>';
+    return;
+  }
+
+  function fmtGame(w, l, t, pct) {
+    if (w+l+t === 0) return '<td class="col-right" style="color:var(--text2)">—</td>';
+    const cls = pct > 0.5 ? 'c-green' : pct < 0.5 ? 'c-red' : '';
+    const wl = t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`;
+    const pctStr = pct >= 0 ? (pct*100).toFixed(0)+'%' : '';
+    return `<td class="col-right ${cls}" style="font-weight:600">${wl}<span style="color:var(--text2);font-size:10px;margin-left:5px">${pctStr}</span></td>`;
+  }
+
+  function fmtRM(w, l, pct) {
+    if (w+l === 0) return '<td class="col-right" style="color:var(--text2)">—</td>';
+    const cls = pct > 0.5 ? 'c-green' : pct < 0.5 ? 'c-red' : '';
+    return `<td class="col-right ${cls}" style="font-weight:700">${w}-${l}<span style="color:var(--text2);font-size:10px;margin-left:5px">${(pct*100).toFixed(0)}%</span></td>`;
+  }
+
+  body.innerHTML = rows.map((r, i) => {
+    const color = MLB_TEAM_COLORS[r.team] || '#4a5568';
+    return `<tr>
+      <td class="col-rank">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:22px;height:22px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:white;flex-shrink:0;text-shadow:0 1px 2px rgba(0,0,0,0.5)">${esc(r.team.slice(0,3))}</div>
+          ${esc(r.team)}
+        </div>
+      </td>
+      ${fmtGame(r.g1W,r.g1L,r.g1T,r.g1pct)}
+      ${fmtGame(r.g2W,r.g2L,r.g2T,r.g2pct)}
+      ${fmtGame(r.g3W,r.g3L,r.g3T,r.g3pct)}
+      ${fmtRM(r.rmW,r.rmL,r.rmpct)}
+    </tr>`;
+  }).join('');
+
+  // Sort indicators
+  document.querySelectorAll('#series-bygame-table th[data-col]').forEach(th => {
+    const col = th.getAttribute('data-col');
+    th.classList.toggle('sort-asc',  col === seriesByGameSort.col && seriesByGameSort.dir === 'asc');
+    th.classList.toggle('sort-desc', col === seriesByGameSort.col && seriesByGameSort.dir === 'desc');
+  });
+}
+
+// ════════════════════════════════════════════
 // SERIES — STANDINGS RENDERER
 // ════════════════════════════════════════════
 
@@ -4649,8 +5314,13 @@ function renderSeriesStandings() {
   const q        = normStr(document.getElementById('series-search').value);
   const league   = document.getElementById('series-league').value;
   const division = document.getElementById('series-division').value;
+  const outcome  = document.getElementById('series-outcome').value;
+  const ha       = document.getElementById('series-ha').value;
+  const lenFilter= document.getElementById('series-length').value;
 
-  const agg = getSeriesAggregates();
+  const agg = (outcome || ha || lenFilter)
+    ? getFilteredAggregates(outcome, ha, lenFilter)
+    : getSeriesAggregates();
   const aggByTeam = {};
   for (const r of agg) aggByTeam[r.team] = r;
 
