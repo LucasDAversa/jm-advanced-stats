@@ -1,6 +1,6 @@
 const { list } = require('@vercel/blob');
 
-const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series'];
+const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series', 'stats-batting', 'stats-pitching'];
 
 // Proxy endpoint for private blob downloads.
 // The browser can't fetch private blobs directly — this server-side
