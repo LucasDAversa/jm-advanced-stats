@@ -4356,20 +4356,25 @@ function cmpBgClick(e) {
 }
 
 // Standard stats lookup for Compare Players
-// Matches by exact name (case-insensitive), or by last name if no exact match found
+// Matches by exact name (case-insensitive), or by last name if no exact match found.
+// When multiple rows match (multiple seasons), picks the one with the highest PA.
 function cmpFindStdRow(arr, name, team) {
   const nameLc = name.toLowerCase();
-  // Exact match first
-  let row = arr.find(r => String(r.Player||'').toLowerCase() === nameLc && (!team || r.Team === team));
-  if (!row) row = arr.find(r => String(r.Player||'').toLowerCase() === nameLc);
+  // Pick the row with the most playing time (PA for batters, IP for pitchers)
+  const volume = r => parseFloat(r.PA) || parseFloat(r.IP) || 0;
+  const bestOf = rows => rows.reduce((best, r) => volume(r) >= volume(best) ? r : best, rows[0]);
+
+  // Exact match with team
+  let candidates = arr.filter(r => String(r.Player||'').toLowerCase() === nameLc && (!team || r.Team === team));
+  if (!candidates.length) candidates = arr.filter(r => String(r.Player||'').toLowerCase() === nameLc);
+  if (candidates.length) return bestOf(candidates);
+
   // Last-name fallback
-  if (!row) {
-    const last = nameLc.split(' ').slice(-1)[0];
-    const candidates = arr.filter(r => String(r.Player||'').toLowerCase().endsWith(last));
-    if (candidates.length === 1) row = candidates[0];
-    else if (team) row = candidates.find(r => r.Team === team) || null;
-  }
-  return row || null;
+  const last = nameLc.split(' ').slice(-1)[0];
+  candidates = arr.filter(r => String(r.Player||'').toLowerCase().endsWith(last));
+  if (candidates.length === 1) return candidates[0];
+  if (team) candidates = candidates.filter(r => r.Team === team);
+  return candidates.length ? bestOf(candidates) : null;
 }
 
 function cmpGetStdBattingStats(name, team) {
