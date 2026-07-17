@@ -2603,7 +2603,8 @@ function sBatterPts(ev) {
     case 'HR':  return 5;
     case 'BB': case 'IBB': case 'HBP': case 'CI': return 2;
     case 'RoE': return 1;
-    case 'FC':  return 1;
+    case 'FC':  return 1;   // fielder's choice — batter reached base
+    case 'FCO': return 0;   // fielder's choice — batter was out, runner advanced
     default:    return 0;
   }
 }
@@ -2615,7 +2616,7 @@ function sBasesResp(ev) {
     case '3B': return 3;
     case 'HR': return 4;
     case '1B': case 'BB': case 'IBB': case 'HBP': case 'CI':
-    case 'RoE': case 'FC': case 'SF': case 'SH': case 'SAC': return 1;
+    case 'RoE': case 'FC': case 'FCO': case 'SF': case 'SH': case 'SAC': return 1;
     default: return 0;
   }
 }
@@ -2687,11 +2688,18 @@ function sNormEvent(raw) {
 // Override the event code using play description cues.
 // WP/PB/Balk → all runners credited fully (nBase=0).
 // Sac Fly/Bunt in description overrides a generic "Out" event.
+// FCO (fielder's choice, batter out) → batter gets runner credit but no personal base credit.
 function getEffectiveEvent(event, desc) {
   const d = String(desc || '');
   if (/wild\s+pitch|\(WP\)|passed\s+ball|\(PB\)|\bbalk\b/i.test(d)) return 'WP';
   if (/\bsac(rifice)?\s+fly\b/i.test(d))             return 'SF';
   if (/\bsac(rifice)?\s+(bunt|hit)\b/i.test(d))       return 'SH';
+  // Fielder's choice where batter was out: "Out" event + runner advances in description
+  if (event === 'Out') {
+    if (/\bfielder.?s?\s+choice\b/i.test(d))          return 'FCO';
+    if (d.includes(';') &&
+        /;\s*[A-Z]\.\s+\S[^;]*?\s+(to\s+[123]B|[Ss]cores)/i.test(d)) return 'FCO';
+  }
   return event;
 }
 
