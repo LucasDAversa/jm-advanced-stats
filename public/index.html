@@ -2093,7 +2093,9 @@ function egMerge() {
   const egPosEl = document.getElementById('eg-pos');
   if (egPosEl) {
     const cur = egPosEl.value;
+    const hasOF = positions.some(p => ['LF','CF','RF'].includes(p));
     egPosEl.innerHTML = '<option value="">All Positions</option>' +
+      (hasOF ? `<option value="OF"${cur==='OF'?' selected':''}>OF</option>` : '') +
       positions.map(p => `<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
   }
 
@@ -2122,7 +2124,10 @@ function egGetFiltered() {
     if (team && r.team !== team) return false;
     if (seas && r.season !== seas) return false;
     if (r.total < minG) return false;
-    if (pos  && r.pos !== pos) return false;
+    if (pos) {
+      const passes = pos === 'OF' ? ['LF','CF','RF','OF'].includes(r.pos) : r.pos === pos;
+      if (!passes) return false;
+    }
     return true;
   });
 }
@@ -2833,7 +2838,9 @@ function enrichSislerPositions() {
   const sisPosEl = document.getElementById('sisler-pos');
   if (sisPosEl) {
     const cur = sisPosEl.value;
+    const hasOF = positions.some(p => ['LF','CF','RF'].includes(p));
     sisPosEl.innerHTML = '<option value="">All Positions</option>' +
+      (hasOF ? `<option value="OF"${cur === 'OF' ? ' selected' : ''}>OF</option>` : '') +
       positions.map(p => `<option value="${p}"${p === cur ? ' selected' : ''}>${p}</option>`).join('');
   }
 }
@@ -2847,7 +2854,10 @@ function sislerGetFiltered() {
     if (q     && !r.player.toLowerCase().includes(q)) return false;
     if (team  && r.team !== team) return false;
     if (month && r.month !== parseInt(month)) return false;
-    if (pos   && r.pos !== pos) return false;
+    if (pos) {
+      const passes = pos === 'OF' ? ['LF','CF','RF','OF'].includes(r.pos) : r.pos === pos;
+      if (!passes) return false;
+    }
     return true;
   });
 }
@@ -4841,8 +4851,12 @@ function statsRenderBatting() {
     if (qualifier && (parseInt(r.PA)||0) < qualifier) return false;
     if (division  && (TEAM_DIVISION[r.Team] || '') !== division) return false;
     if (pos) {
-      const p = statsGetPos(r.Player, r.Team);
-      if (!p || !p.toUpperCase().includes(pos.toUpperCase())) return false;
+      const p = (statsGetPos(r.Player, r.Team) || '').toUpperCase();
+      const filterPos = pos.toUpperCase();
+      const passes = filterPos === 'OF'
+        ? ['LF', 'CF', 'RF', 'OF'].includes(p)
+        : p === filterPos;
+      if (!passes) return false;
     }
     return true;
   });
