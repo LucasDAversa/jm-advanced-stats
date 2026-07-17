@@ -2680,8 +2680,11 @@ function sNormEvent(raw) {
   if (/^home\s*run/i.test(e) || e === 'HR') return 'HR';
   if (/^walk/i.test(e) || e === 'BB') return 'BB';
   if (/^hit\s+by\s+pitch/i.test(e) || e === 'HBP') return 'HBP';
+  if (/^strikeout/i.test(e)) return 'SO';
   if (/^fielder.s\s+choice/i.test(e)) return 'FC';
   if (/^sac(rifice)?\s+(fly|hit|bunt)/i.test(e)) return e.toLowerCase().includes('fly') ? 'SF' : 'SH';
+  // Normalize all out variants (groundout, flyout, lineout, popout, etc.) → 'Out'
+  if (/^(ground|fly|line|pop|force)\s*out/i.test(e)) return 'Out';
   return e;
 }
 
@@ -3287,7 +3290,11 @@ function buildBRFromRaw(raw, { batCol, tmCol, evCol, innCol, descCol, dateCol })
 
       const endBase = move.destination;
       if (endBase > entry.base) {
-        const brPts = calcRunnerBRPts(entry.base, endBase, effectiveEvent);
+        // If event is a plain 'Out' with no specific override (WP/SF/SH/FC already caught above),
+        // the batter's play moved the runner — treat as FCO so the runner gets 0 credit
+        // for the forced base and the batter gets the runner credit instead.
+        const creditEvent = (event === 'Out' && effectiveEvent === 'Out') ? 'FCO' : effectiveEvent;
+        const brPts = calcRunnerBRPts(entry.base, endBase, creditEvent);
         if (brPts > 0) {
           _recordsPushed++;
           SISLER.brRecords.push({
