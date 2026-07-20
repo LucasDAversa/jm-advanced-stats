@@ -4320,7 +4320,7 @@ function cmpRenderStatToggles() {
     const hidden = CMP_HIDDEN_STATS.has(label);
     if (hidden) {
       // Hidden stats: show as muted chips — click to restore
-      return `<button onclick="cmpToggleStat(${JSON.stringify(label)})"
+      return `<button onclick='cmpToggleStat(${JSON.stringify(label)})'
         style="padding:3px 8px;border-radius:12px;font-size:10px;cursor:pointer;border:1px solid var(--border);
                background:var(--surface);color:var(--text2);opacity:0.55"
         title="Click to show">${esc(label)}</button>`;
@@ -4328,7 +4328,7 @@ function cmpRenderStatToggles() {
     // Visible stats: show with ✕ to hide
     return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text1);font-weight:600">
       ${esc(label)}
-      <button onclick="event.stopPropagation();cmpToggleStat(${JSON.stringify(label)})"
+      <button onclick='event.stopPropagation();cmpToggleStat(${JSON.stringify(label)})'
         style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:10px;padding:0;line-height:1;margin-left:1px"
         title="Hide">✕</button>
     </span>`;
@@ -4355,23 +4355,28 @@ function cmpBgClick(e) {
   if (e.target === document.getElementById('cmp-modal')) closeCompareModal();
 }
 
+// Strip generational suffixes so "Jazz Chisholm Jr." matches "Jazz Chisholm"
+function cmpNormName(n) {
+  return String(n || '').toLowerCase()
+    .replace(/\s+(?:jr\.?|sr\.?|ii|iii|iv|v)$/i, '').trim();
+}
+
 // Standard stats lookup for Compare Players
-// Matches by exact name (case-insensitive), or by last name if no exact match found.
-// When multiple rows match (multiple seasons), picks the one with the highest PA.
+// Matches by normalized name (suffix-stripped, case-insensitive) then team, then last-name fallback.
+// When multiple rows match (multiple seasons), picks the one with the highest PA / IP.
 function cmpFindStdRow(arr, name, team) {
-  const nameLc = name.toLowerCase();
-  // Pick the row with the most playing time (PA for batters, IP for pitchers)
+  const nameLc = cmpNormName(name);
   const volume = r => parseFloat(r.PA) || parseFloat(r.IP) || 0;
   const bestOf = rows => rows.reduce((best, r) => volume(r) >= volume(best) ? r : best, rows[0]);
 
-  // Exact match with team
-  let candidates = arr.filter(r => String(r.Player||'').toLowerCase() === nameLc && (!team || r.Team === team));
-  if (!candidates.length) candidates = arr.filter(r => String(r.Player||'').toLowerCase() === nameLc);
+  // Exact normalized match with team
+  let candidates = arr.filter(r => cmpNormName(r.Player) === nameLc && (!team || r.Team === team));
+  if (!candidates.length) candidates = arr.filter(r => cmpNormName(r.Player) === nameLc);
   if (candidates.length) return bestOf(candidates);
 
   // Last-name fallback
-  const last = nameLc.split(' ').slice(-1)[0];
-  candidates = arr.filter(r => String(r.Player||'').toLowerCase().endsWith(last));
+  const last = nameLc.split(' ').pop();
+  candidates = arr.filter(r => cmpNormName(r.Player).split(' ').pop() === last);
   if (candidates.length === 1) return candidates[0];
   if (team) candidates = candidates.filter(r => r.Team === team);
   return candidates.length ? bestOf(candidates) : null;
@@ -4489,7 +4494,7 @@ function cmpGetHitterStats(name, team) {
   const brTotal = tripBR + sbEntry.sbPts;
   const mx      = rows.reduce((s, r) => s + (r.max_pts || 0), 0);
   const score   = hitPts + brTotal;
-  const prod    = mx > 0 ? score / mx * 100 : 0;
+  const prod    = mx > 0 ? score / mx : 0;
   // Empty Games
   const egRow      = (EG.combined || []).find(r => r.player === name && r.team === team);
   const egPct      = egRow ? egRow.pct      : null;
@@ -4583,7 +4588,7 @@ function cmpRender() {
       // Label cell with inline X
       rows += `<div class="cmp-label-cell" style="${labelStyle};display:flex;align-items:center;justify-content:space-between;gap:4px">
         <span>${esc(def.label)}</span>
-        <button onclick="cmpToggleStat(${JSON.stringify(def.label)})"
+        <button onclick='cmpToggleStat(${JSON.stringify(def.label)})'
           style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text2);font-size:10px;padding:0 2px;opacity:0.5;line-height:1"
           title="Hide stat">✕</button>
       </div>`;
@@ -4757,13 +4762,14 @@ function statsGetFilters() {
 }
 
 // Look up position for a player from EG data (which has Pos column)
+// Uses cmpNormName so "Jazz Chisholm Jr." matches "Jazz Chisholm" across datasets
 function statsGetPos(playerName, team) {
+  const norm = cmpNormName(playerName);
   const egRow = (EG.combined || []).find(r =>
-    r.player?.toLowerCase() === playerName.toLowerCase() && (!team || r.team === team));
+    cmpNormName(r.player) === norm && (!team || r.team === team));
   if (egRow?.pos) return egRow.pos;
-  // Try SISLER data too
   const sisRow = (SISLER.raw || []).find(r =>
-    r.player?.toLowerCase() === playerName.toLowerCase() && (!team || r.team === team));
+    cmpNormName(r.player) === norm && (!team || r.team === team));
   return sisRow?.pos || '';
 }
 
