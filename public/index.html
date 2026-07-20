@@ -4355,10 +4355,14 @@ function cmpBgClick(e) {
   if (e.target === document.getElementById('cmp-modal')) closeCompareModal();
 }
 
-// Strip generational suffixes so "Jazz Chisholm Jr." matches "Jazz Chisholm"
+// Normalize player names for cross-dataset matching:
+//   - strips BBRef handedness markers (* = LHB, # = switch hitter)
+//   - strips generational suffixes (Jr., Sr., II, III, IV, V)
 function cmpNormName(n) {
   return String(n || '').toLowerCase()
-    .replace(/\s+(?:jr\.?|sr\.?|ii|iii|iv|v)$/i, '').trim();
+    .replace(/[*#]/g, '')                              // BBRef batting-hand markers
+    .replace(/\s+(?:jr\.?|sr\.?|ii|iii|iv|v)$/i, '') // generational suffixes
+    .trim();
 }
 
 // Standard stats lookup for Compare Players
