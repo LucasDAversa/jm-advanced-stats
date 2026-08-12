@@ -43,7 +43,6 @@ module.exports = async function handler(req, res) {
       access: 'public',
       contentType: 'text/csv',
       addRandomSuffix: false,
-      allowOverwrite: true,
     });
     return res.status(200).json({ url: blob.url });
   } catch (err) {
