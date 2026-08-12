@@ -2,6 +2,7 @@ const { list } = require('@vercel/blob');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (req.method !== 'GET') return res.status(405).end();
 
   const { blobs } = await list({ prefix: 'csvs/' });
