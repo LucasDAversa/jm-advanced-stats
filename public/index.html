@@ -3914,10 +3914,12 @@ async function loadServerCSVs() {
       urls['eg-empty'] ? fetchText(urls['eg-empty']) : null,
     ]);
     if (egTotText) {
+      STORED_CSVS.egTotal = egTotText;
       EG.total = parse(egTotText);
       setStatus('egst-total', 'egbtn-total', `✓ Server (${EG.total.length} rows)`);
     }
     if (egEmpText) {
+      STORED_CSVS.egEmpty = egEmpText;
       EG.empty = parse(egEmpText);
       setStatus('egst-empty', 'egbtn-empty', `✓ Server (${EG.empty.length} rows)`);
     }
@@ -3925,15 +3927,16 @@ async function loadServerCSVs() {
 
     if (urls['sgs']) {
       const text = await fetchText(urls['sgs']);
-      if (text) { sgsBuildData(parse(text)); setStatus('sgsst', 'sgsbtn', `✓ Server`); }
+      if (text) { STORED_CSVS.sgs = text; sgsBuildData(parse(text)); setStatus('sgsst', 'sgsbtn', `✓ Server`); }
     }
     if (urls['sisler-pa']) {
       const text = await fetchText(urls['sisler-pa']);
-      if (text) { sislerBuild(parse(text)); setStatus('sislerst', 'sislerbtn', `✓ Server`); }
+      if (text) { STORED_CSVS.sislerPa = text; sislerBuild(parse(text)); setStatus('sislerst', 'sislerbtn', `✓ Server`); }
     }
     if (urls['sisler-sb']) {
       const text = await fetchText(urls['sisler-sb']);
       if (text) {
+        STORED_CSVS.sislerSb = text;
         buildBRFromSB(parse(text));
         setStatus('sbst', 'sbbtn', '✓ Server');
         sislerUpdateSBNotice();
@@ -3942,7 +3945,7 @@ async function loadServerCSVs() {
     }
     if (urls['series']) {
       const text = await fetchText(urls['series']);
-      if (text) { buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
+      if (text) { STORED_CSVS.series = text; buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
     }
     if (urls['stats-batting']) {
       const text = await fetchText(urls['stats-batting']);
