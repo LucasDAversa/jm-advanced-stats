@@ -3908,45 +3908,57 @@ async function loadServerCSVs() {
     return r.text();
   }
 
+  // Each block has its own try-catch so a crash in one cannot abort the others.
   try {
     const [egTotText, egEmpText] = await Promise.all([
       urls['eg-total'] ? fetchText(urls['eg-total']) : null,
       urls['eg-empty'] ? fetchText(urls['eg-empty']) : null,
     ]);
     if (egTotText) {
-      STORED_CSVS.egTotal = egTotText;
       EG.total = parse(egTotText);
       setStatus('egst-total', 'egbtn-total', `✓ Server (${EG.total.length} rows)`);
     }
     if (egEmpText) {
-      STORED_CSVS.egEmpty = egEmpText;
       EG.empty = parse(egEmpText);
       setStatus('egst-empty', 'egbtn-empty', `✓ Server (${EG.empty.length} rows)`);
     }
     if (EG.total && EG.empty) egMerge();
+  } catch (e) { console.warn('loadServerCSVs [EG]:', e); }
 
+  try {
     if (urls['sgs']) {
       const text = await fetchText(urls['sgs']);
-      if (text) { STORED_CSVS.sgs = text; sgsBuildData(parse(text)); setStatus('sgsst', 'sgsbtn', `✓ Server`); }
+      if (text) { sgsBuildData(parse(text)); setStatus('sgsst', 'sgsbtn', `✓ Server`); }
     }
+  } catch (e) { console.warn('loadServerCSVs [SGS]:', e); }
+
+  try {
     if (urls['sisler-pa']) {
       const text = await fetchText(urls['sisler-pa']);
-      if (text) { STORED_CSVS.sislerPa = text; sislerBuild(parse(text)); setStatus('sislerst', 'sislerbtn', `✓ Server`); }
+      if (text) { sislerBuild(parse(text)); setStatus('sislerst', 'sislerbtn', `✓ Server`); }
     }
+  } catch (e) { console.warn('loadServerCSVs [sisler-pa]:', e); }
+
+  try {
     if (urls['sisler-sb']) {
       const text = await fetchText(urls['sisler-sb']);
       if (text) {
-        STORED_CSVS.sislerSb = text;
         buildBRFromSB(parse(text));
         setStatus('sbst', 'sbbtn', '✓ Server');
         sislerUpdateSBNotice();
         if (SISLER.raw.length) sislerRender();
       }
     }
+  } catch (e) { console.warn('loadServerCSVs [sisler-sb]:', e); }
+
+  try {
     if (urls['series']) {
       const text = await fetchText(urls['series']);
-      if (text) { STORED_CSVS.series = text; buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
+      if (text) { buildSeriesData(parse(text)); setStatus('seriesst', 'seriesbtn', `✓ Server`); }
     }
+  } catch (e) { console.warn('loadServerCSVs [series]:', e); }
+
+  try {
     if (urls['stats-batting']) {
       const text = await fetchText(urls['stats-batting']);
       if (text) {
@@ -3958,6 +3970,9 @@ async function loadServerCSVs() {
         statsRenderBatting();
       }
     }
+  } catch (e) { console.warn('loadServerCSVs [stats-batting]:', e); }
+
+  try {
     if (urls['stats-pitching']) {
       const text = await fetchText(urls['stats-pitching']);
       if (text) {
@@ -3968,9 +3983,7 @@ async function loadServerCSVs() {
         statsRenderPitching();
       }
     }
-  } catch (e) {
-    console.warn('loadServerCSVs error:', e);
-  }
+  } catch (e) { console.warn('loadServerCSVs [stats-pitching]:', e); }
 }
 
 function sislerRenderCombinedTeam(players) {
