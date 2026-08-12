@@ -1889,6 +1889,9 @@ function switchStat(id) {
   });
   document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'stats') {
+    statsRender();
+  }
   if (id === 'admin') {
     if (adminUnlocked) adminRefreshStatus();
     // else gate is already showing
@@ -3949,7 +3952,7 @@ async function loadServerCSVs() {
         STATS.batting = data;
         populateTeamFilter('stats-team', [...new Set(data.map(r => r.Team).filter(Boolean))].sort());
         safeText('acrs-stats-batting', `✓ Server (${data.length} rows)`);
-        if (STATS.view === 'batting') statsRenderBatting();
+        statsRenderBatting();
       }
     }
     if (urls['stats-pitching']) {
@@ -3959,7 +3962,7 @@ async function loadServerCSVs() {
         const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
         STATS.pitching = data;
         safeText('acrs-stats-pitching', `✓ Server (${data.length} rows)`);
-        if (STATS.view === 'pitching') statsRenderPitching();
+        statsRenderPitching();
       }
     }
   } catch (e) {
