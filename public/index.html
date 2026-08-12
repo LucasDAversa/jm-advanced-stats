@@ -1464,7 +1464,11 @@ tbody td { padding: 9px 12px; font-size: 13px; }
       <button id="admin-save-btn" onclick="adminSaveAll()" style="width:100%;padding:14px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;transition:opacity 0.15s">
         💾 Save to Site
       </button>
-      <div id="admin-save-status" style="text-align:center;font-size:12px;color:var(--text2);min-height:20px;margin-bottom:28px"></div>
+      <div id="admin-save-status" style="text-align:center;font-size:12px;color:var(--text2);min-height:20px;margin-bottom:8px"></div>
+      <button onclick="adminCheckServer()" style="width:100%;padding:8px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;margin-bottom:20px">
+        🔍 Check What's on Server
+      </button>
+      <div id="admin-server-status" style="font-size:11px;color:var(--text2);margin-bottom:16px;white-space:pre-wrap;font-family:monospace"></div>
 
       <!-- CSV rows -->
       <div style="display:flex;flex-direction:column;gap:12px" id="admin-csv-rows">
@@ -2004,6 +2008,24 @@ async function adminSaveAll() {
   } else {
     statusEl.textContent = `${saved} saved, ${failed} failed. Check that Vercel Blob is connected.`;
     statusEl.style.color = 'var(--accent)';
+  }
+}
+
+async function adminCheckServer() {
+  const el = document.getElementById('admin-server-status');
+  el.textContent = 'Checking…';
+  try {
+    const r = await fetch('/api/csvs');
+    if (!r.ok) { el.textContent = `✗ /api/csvs returned ${r.status}`; return; }
+    const urls = await r.json();
+    const keys = Object.keys(urls);
+    if (!keys.length) {
+      el.textContent = 'No files found on server.';
+    } else {
+      el.textContent = 'Files on server:\n' + keys.map(k => `  ✓ ${k}`).join('\n');
+    }
+  } catch (e) {
+    el.textContent = `✗ Error: ${e.message}`;
   }
 }
 
@@ -5044,30 +5066,53 @@ function statsRenderPitching() {
 function loadStatsBattingFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  file.text().then(text => {
+  file.text().then(async text => {
     STORED_CSVS.statsBatting = text;
     const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
-    // Filter out blank/header rows (BBRef adds 'Rk' rows mid-table for navigation)
     STATS.batting = data.filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
     populateTeamFilter('stats-team', [...new Set(STATS.batting.map(r => r.Team).filter(Boolean))].sort());
-    safeText('acrs-stats-batting', `✓ ${file.name} (${STATS.batting.length} rows)`);
-    if (STATS.view === 'batting') statsRenderBatting();
-    persistCSV('stats-batting', text);
+    safeText('acrs-stats-batting', `✓ ${file.name} (${STATS.batting.length} rows) — saving…`);
+    statsRenderBatting();
     adminRefreshStatus();
+    try {
+      const r = await uploadToServer('stats-batting', text);
+      if (r.ok) {
+        safeText('acrs-stats-batting', `✓ ${file.name} (${STATS.batting.length} rows) — saved ✓`);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        safeText('acrs-stats-batting', `✓ ${file.name} — ✗ Save failed: ${err.error || r.status}`);
+        console.error('stats-batting upload failed:', r.status, err);
+      }
+    } catch (e) {
+      safeText('acrs-stats-batting', `✓ ${file.name} — ✗ Save failed (network error)`);
+      console.error('stats-batting upload error:', e);
+    }
   });
 }
 
 function loadStatsPitchingFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  file.text().then(text => {
+  file.text().then(async text => {
     STORED_CSVS.statsPitching = text;
     const data = fixWrappedCSV(Papa.parse(text, { header: true, skipEmptyLines: true }).data);
     STATS.pitching = data.filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
-    if (STATS.view === 'pitching') statsRenderPitching();
-    safeText('acrs-stats-pitching', `✓ ${file.name} (${STATS.pitching.length} rows)`);
-    persistCSV('stats-pitching', text);
+    statsRenderPitching();
+    safeText('acrs-stats-pitching', `✓ ${file.name} (${STATS.pitching.length} rows) — saving…`);
     adminRefreshStatus();
+    try {
+      const r = await uploadToServer('stats-pitching', text);
+      if (r.ok) {
+        safeText('acrs-stats-pitching', `✓ ${file.name} (${STATS.pitching.length} rows) — saved ✓`);
+      } else {
+        const err = await r.json().catch(() => ({}));
+        safeText('acrs-stats-pitching', `✓ ${file.name} — ✗ Save failed: ${err.error || r.status}`);
+        console.error('stats-pitching upload failed:', r.status, err);
+      }
+    } catch (e) {
+      safeText('acrs-stats-pitching', `✓ ${file.name} — ✗ Save failed (network error)`);
+      console.error('stats-pitching upload error:', e);
+    }
   });
 }
 
