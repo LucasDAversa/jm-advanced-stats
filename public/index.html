@@ -3980,11 +3980,11 @@ async function loadServerCSVs() {
     }
   } catch (e) { console.warn('loadServerCSVs [series]:', e); }
 
-  // Stats CSVs: fetch directly (same as other CSVs) with cache-buster to force fresh CDN response.
+  // Stats CSVs: fetch directly using the CDN URL (same pattern as all other CSVs).
+  // Do NOT append query params — Vercel Blob CDN returns an HTML error page for URLs with query strings.
   try {
     if (urls['stats-batting']) {
-      const bust = '?t=' + Date.now();
-      const text = await fetchText(urls['stats-batting'] + bust);
+      const text = await fetchText(urls['stats-batting']);
       if (text && text.trim()) {
         STORED_CSVS.statsBatting = text;
         const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
@@ -3992,25 +3992,19 @@ async function loadServerCSVs() {
         populateTeamFilter('stats-team', [...new Set(data.map(r => r.Team).filter(Boolean))].sort());
         safeText('acrs-stats-batting', `✓ Server (${data.length} rows)`);
         statsRenderBatting();
-      } else {
-        safeText('acrs-stats-batting', '✗ Server: empty response');
-        console.warn('stats-batting: blob URL returned empty, url=', urls['stats-batting']);
       }
     }
   } catch (e) { console.warn('loadServerCSVs [stats-batting]:', e); }
 
   try {
     if (urls['stats-pitching']) {
-      const bust = '?t=' + Date.now();
-      const text = await fetchText(urls['stats-pitching'] + bust);
+      const text = await fetchText(urls['stats-pitching']);
       if (text && text.trim()) {
         STORED_CSVS.statsPitching = text;
         const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
         STATS.pitching = data;
         safeText('acrs-stats-pitching', `✓ Server (${data.length} rows)`);
         statsRenderPitching();
-      } else {
-        safeText('acrs-stats-pitching', '✗ Server: empty response');
       }
     }
   } catch (e) { console.warn('loadServerCSVs [stats-pitching]:', e); }
