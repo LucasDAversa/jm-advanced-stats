@@ -2,11 +2,11 @@ const { list } = require('@vercel/blob');
 
 const VALID_KEYS = ['eg-total', 'eg-empty', 'sgs', 'sisler-pa', 'sisler-sb', 'series', 'stats-batting', 'stats-pitching'];
 
-// Proxy endpoint for blob downloads.
-// Routes CSV fetches through the server to avoid CORS / CDN issues in the browser.
+// Proxy endpoint for private blob downloads.
+// The browser can't fetch private blobs directly — this server-side
+// handler fetches with the BLOB_READ_WRITE_TOKEN and streams it back.
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (req.method !== 'GET') return res.status(405).end();
 
   const { key } = req.query;
@@ -19,10 +19,11 @@ module.exports = async function handler(req, res) {
     if (!blobs.length) return res.status(404).json({ error: 'Not found' });
 
     const blobUrl = blobs[0].url;
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
 
-    // Public blobs do not require an Authorization header.
-    // Sending one can cause the Vercel CDN to reject the request.
-    const upstream = await fetch(blobUrl);
+    const upstream = await fetch(blobUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!upstream.ok) {
       return res.status(upstream.status).json({ error: 'Blob fetch failed' });
