@@ -3980,12 +3980,11 @@ async function loadServerCSVs() {
     }
   } catch (e) { console.warn('loadServerCSVs [series]:', e); }
 
-  // Stats CSVs: use the server-side proxy (/api/csv) instead of direct CDN URLs.
-  // The proxy is reliable for small files and avoids potential CDN caching/fetch issues.
+  // Stats CSVs: fetch directly (same as other CSVs) with cache-buster to force fresh CDN response.
   try {
-    const r = await fetch('/api/csv?key=stats-batting');
-    if (r.ok) {
-      const text = await r.text();
+    if (urls['stats-batting']) {
+      const bust = '?t=' + Date.now();
+      const text = await fetchText(urls['stats-batting'] + bust);
       if (text && text.trim()) {
         STORED_CSVS.statsBatting = text;
         const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
@@ -3995,16 +3994,15 @@ async function loadServerCSVs() {
         statsRenderBatting();
       } else {
         safeText('acrs-stats-batting', '✗ Server: empty response');
+        console.warn('stats-batting: blob URL returned empty, url=', urls['stats-batting']);
       }
-    } else if (r.status !== 404) {
-      safeText('acrs-stats-batting', `✗ Server error: ${r.status}`);
     }
   } catch (e) { console.warn('loadServerCSVs [stats-batting]:', e); }
 
   try {
-    const r = await fetch('/api/csv?key=stats-pitching');
-    if (r.ok) {
-      const text = await r.text();
+    if (urls['stats-pitching']) {
+      const bust = '?t=' + Date.now();
+      const text = await fetchText(urls['stats-pitching'] + bust);
       if (text && text.trim()) {
         STORED_CSVS.statsPitching = text;
         const data = parse(text).filter(r => r.Player && r.Player !== 'Player' && String(r.Rk||'').trim() !== 'Rk');
@@ -4014,8 +4012,6 @@ async function loadServerCSVs() {
       } else {
         safeText('acrs-stats-pitching', '✗ Server: empty response');
       }
-    } else if (r.status !== 404) {
-      safeText('acrs-stats-pitching', `✗ Server error: ${r.status}`);
     }
   } catch (e) { console.warn('loadServerCSVs [stats-pitching]:', e); }
 }
